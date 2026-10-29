@@ -133,6 +133,8 @@
   #bookView iframe { width: min(1120px, 94vw); height: min(88vh, 920px); border: 0; border-radius: 8px; background: #f4ecdd; box-shadow: 0 30px 90px rgba(0,0,0,.6); }
   #bookView .close { position: absolute; top: 20px; right: 24px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,248,236,.14); color: #fff8ec; font-size: 18px; cursor: pointer; }
   #bookView .close:hover { background: rgba(255,248,236,.3); }
+  #bookView .book-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-family: var(--hand); font-size: 16px; letter-spacing: 3px; color: #e8d9be; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #bookView.loading .book-loading { opacity: 1; }
 
   #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 60; background: #fffdf6; color: var(--coffee); padding: 10px 18px; border-radius: 999px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.35); opacity: 0; transition: opacity .3s; }
   #toast.show { opacity: 1; }
@@ -233,6 +235,7 @@
   </div>
 
   <div id="bookView">
+    <div class="book-loading">正在打开翻页书…</div>
     <iframe id="bookFrame" title="翻页书"></iframe>
     <button class="close" id="bookViewClose">✕</button>
   </div>
@@ -1813,10 +1816,12 @@ lightboxEl.addEventListener('click', e => { if (e.target === lightboxEl) closeLi
 /* 长桌上的翻页书：点击桌上的书 → 弹出阅读层（iframe 内是完整翻页书，可翻页） */
 const bookViewEl = document.getElementById('bookView');
 const bookFrame = document.getElementById('bookFrame');
+let bookLoaded = false;
 function openBookView() {
-  if (!bookFrame.getAttribute('src')) bookFrame.src = './birthday-book.html?v=1029b';
-  bookViewEl.classList.add('show');
+  bookViewEl.classList.add('show', 'loading');
+  if (!bookLoaded) { bookFrame.src = './birthday-book.html?v=1030a'; bookLoaded = true; }
 }
+bookFrame.addEventListener('load', () => bookViewEl.classList.remove('loading'));
 function closeBookView() { bookViewEl.classList.remove('show'); }
 document.getElementById('bookViewClose').addEventListener('click', closeBookView);
 // 阻止冒泡到 window 的 pointerup 场景点击判定
