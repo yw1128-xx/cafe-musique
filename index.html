@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<!-- saved from url=(0032)http://localhost:8124/index.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Café · Musique · 生日惊喜</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./微缩咖啡屋 · 生日惊喜_files/css2" rel="stylesheet">
+
+<style>
+  :root {
+    --cream: #f4e8d3; --paper: #fff8ec; --ink: #3c2a1a; --wood: #7a4f2b;
+    --amber: #c98a3d; --coffee: #6b4423;
+    --script: 'Parisienne', 'Dancing Script', cursive;
+    --hand: 'Ma Shan Zheng', 'STKaiti', 'KaiTi', '楷体', serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: "Georgia", "Songti SC", serif; color: var(--ink); background: #1c130d; }
+  #app { position: fixed; inset: 0; }
+
+  #gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; }
+  #gl.dragging { cursor: grabbing; }
+  #gl.hoverable { cursor: pointer; }
+
+  #loading { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #2e2015 0%, #1c130d 70%); transition: opacity .6s ease; }
+  #loading.hidden { opacity: 0; pointer-events: none; }
+  #loading .title { font-size: 26px; letter-spacing: 4px; color: var(--cream); margin-bottom: 6px; }
+  #loading .sub { font-size: 13px; color: #b99b72; margin-bottom: 28px; }
+  #loading .bar-wrap { width: min(340px, 70vw); height: 6px; border-radius: 999px; background: #3a2a1c; overflow: hidden; }
+  #loading .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--amber), #e6b877); transition: width .2s; }
+  #loading .hint { margin-top: 16px; font-size: 12px; color: #8a6f52; max-width: 70vw; text-align: center; line-height: 1.7; }
+
+  #start { position: absolute; inset: 0; z-index: 48; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #3a2818 0%, #1c130d 70%); cursor: pointer; transition: opacity .8s ease; }
+  #start.hidden { opacity: 0; pointer-events: none; }
+  #start .brand { font-family: var(--script); font-size: 44px; color: var(--cream); }
+  #start h1 { font-family: var(--hand); font-size: 26px; color: var(--cream); letter-spacing: 6px; margin: 8px 0 30px; font-weight: 400; }
+  #start .tap { font-size: 15px; color: #d9c3a3; padding: 12px 28px; border: 1px solid rgba(201,138,61,.5); border-radius: 999px; animation: pulse 1.8s infinite; }
+
+  /* ── 开业信封页：白色星星信封 + 兔子吐司开封按钮 ── */
+  #envelopePage { position: absolute; inset: 0; z-index: 49; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 38%, #43301f 0%, #1c130d 75%); transition: opacity .8s ease; }
+  #envelopePage.hidden { opacity: 0; pointer-events: none; }
+  .env-stage { perspective: 1200px; }
+  .env { position: relative; width: min(340px, 86vw); height: min(226px, 58vw); cursor: pointer; filter: drop-shadow(0 26px 50px rgba(0,0,0,.55)); transition: transform .35s ease; }
+  .env:not(.open):hover { transform: translateY(-6px); }
+  .env.open { cursor: default; }
+  .env-back { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(160deg, #ffffff, #f4eee1); box-shadow: inset 0 0 0 1px #ddd3c0; }
+  .env-front { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(200deg, #ffffff, #f6f0e3); clip-path: polygon(0 0, 50% 54%, 100% 0, 100% 100%, 0 100%); box-shadow: inset 0 0 0 1px #ddd3c0; z-index: 3; }
+  .env-front .st { position: absolute; color: #7b756b; line-height: 1; }
+  .env-flap { position: absolute; left: 0; right: 0; top: 0; height: 55%; background: linear-gradient(180deg, #ffffff, #f1ebdd); clip-path: polygon(0 0, 100% 0, 50% 100%); border-radius: 10px 10px 0 0; transform-origin: top center; transition: transform .85s cubic-bezier(.55,.06,.35,1), z-index .85s step-end; z-index: 5; box-shadow: inset 0 0 0 1px #ddd3c0; backface-visibility: hidden; }
+  .env.open .env-flap { transform: rotateX(180deg); z-index: 1; }
+  /* 信纸：藏在袋内(z2)，拆封后向上抽出，底边留口袋里；文字：TO小音 + 英文贺词 */
+  .letter-card { position: absolute; left: 50%; top: 50%; width: min(280px, 74vw); height: 190px; transform: translate(-50%, -30%) scale(.6); background: linear-gradient(150deg, #fffdf8, #f7f1e4); border-radius: 8px; padding: 20px 22px; box-shadow: 0 18px 46px rgba(0,0,0,.4), inset 0 0 0 1px #e3d9c6; color: #6b4a2b; z-index: 2; opacity: 0; transition: transform .95s cubic-bezier(.2,.7,.3,1.04) .55s, opacity .45s ease .55s; }
+  .env.open .letter-card { transform: translate(-50%, -95%) scale(1); opacity: 1; }
+  .letter-card .lc-to { font-family: var(--hand); font-size: 22px; letter-spacing: 2px; color: #6b4a2b; }
+  .letter-card .lc-text { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 16px; color: #7a5a34; line-height: 1.85; margin-top: 8px; text-indent: 2em; }
+  /* 兔子吐司按钮（OPEN IT） */
+  .env-open-btn { margin-top: 44px; display: flex; flex-direction: column; align-items: center; gap: 12px; background: none; border: none; cursor: pointer; animation: bob 1.8s ease-in-out infinite; transition: opacity .5s, transform .5s; }
+  .env-open-btn .badge { width: 104px; height: 104px; border-radius: 30px; background: #fffdf6; display: flex; align-items: center; justify-content: center; box-shadow: 0 14px 34px rgba(0,0,0,.55), inset 0 0 0 1px #ecdfc7; overflow: hidden; transition: transform .25s; }
+  .env-open-btn:hover .badge { transform: translateY(-4px) scale(1.05); }
+  .env-open-btn .badge img { width: 84%; height: 84%; object-fit: contain; }
+  .env-open-btn .lbl { font-family: Georgia, serif; font-size: 13px; letter-spacing: 7px; color: #d9c3a3; text-indent: 7px; }
+  #envelopePage.opened .env-open-btn { opacity: 0; pointer-events: none; transform: scale(.75); }
+  /* 拆封后出现的"进入咖啡屋"按钮 */
+  .env-enter-btn { position: absolute; left: 50%; bottom: max(7vh, 42px); transform: translate(-50%, 14px); font-family: var(--hand); font-size: 17px; letter-spacing: 3px; padding: 12px 32px; border: 1px solid #c98a3d; border-radius: 999px; background: linear-gradient(135deg, #fff6e6, #f5dfba); color: #7a5225; cursor: pointer; box-shadow: 0 12px 30px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .6s ease 1.25s, transform .6s ease 1.25s; }
+  .env-enter-btn:hover { box-shadow: 0 16px 36px rgba(160,110,50,.45); }
+  #envelopePage.opened .env-enter-btn { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @keyframes pulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
+
+  #hud { position: absolute; left: 18px; bottom: 18px; z-index: 30; font-size: 12px; color: #d9c3a3; line-height: 1.9; background: rgba(28,19,13,.55); padding: 10px 14px; border-radius: 10px; backdrop-filter: blur(4px); border: 1px solid rgba(201,138,61,.25); }
+  #hud b { color: var(--cream); font-weight: 600; }
+
+  #menu { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(18,12,7,.45); backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+  #menu.show { opacity: 1; pointer-events: auto; }
+  #menu .card { width: min(560px, 92vw); max-height: 84vh; overflow: auto; background: url('./images/menu-paper.jpg') center/cover; border-radius: 4px; padding: 34px 40px 30px; box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 0 1px rgba(122,79,43,.25); transform: translateY(10px) scale(.98); transition: transform .25s ease; position: relative; }
+  #menu.show .card { transform: none; }
+  #menu .close { position: absolute; top: 12px; right: 14px; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(122,79,43,.15); color: #4a2f18; font-size: 16px; cursor: pointer; }
+  #menu .menu-title { font-family: var(--hand); font-size: 46px; color: #3d2712; text-align: center; letter-spacing: 14px; text-indent: 14px; line-height: 1; }
+  #menu .menu-sub { font-family: var(--script); font-size: 20px; color: #6b4a2b; text-align: center; margin: 4px 0 14px; opacity: .85; }
+  #menu .section { display: flex; align-items: baseline; gap: 8px; margin: 18px 0 6px; }
+  #menu .section .zh { font-family: var(--hand); font-size: 19px; color: #3d2712; letter-spacing: 2px; }
+  #menu .section .en { font-family: var(--hand); font-size: 13px; color: #7a5a34; letter-spacing: 4px; text-transform: uppercase; }
+  #menu .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 34px; }
+  #menu .item { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 6px; border-radius: 6px; cursor: pointer; transition: background .15s ease; }
+  #menu .item:hover { background: rgba(122,79,43,.1); }
+  #menu .item .nm { font-family: var(--hand); font-size: 18px; color: #3d2712; letter-spacing: 1px; }
+  #menu .item .nm small { display: block; font-family: var(--hand); font-size: 11px; color: #8a6a44; margin-top: 1px; letter-spacing: 1px; }
+  #menu .item .pr { font-family: var(--hand); font-size: 16px; color: #5d3f24; white-space: nowrap; }
+  #menu .item.birthday { outline: 1.5px dashed #b9781f; outline-offset: 2px; }
+  #menu .item.birthday .pr { color: #b9781f; }
+
+  #letter { position: absolute; inset: 0; z-index: 65; display: flex; align-items: center; justify-content: center; background: rgba(12,8,4,.72); backdrop-filter: blur(5px); opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+  #letter.show { opacity: 1; pointer-events: auto; }
+  /* 蛋糕信：点击信封拆封 → 信封淡出消失，信纸淡入显示（信纸下方无信封） */
+  #letter .letter-stage { position: relative; display: flex; flex-direction: column; align-items: center; }
+  #letter .env { width: min(360px, 86vw); height: min(240px, 58vw); opacity: 1; transition: opacity .35s ease .35s; }
+  #letter .env.open { opacity: 0; pointer-events: none; }
+  #letter .l-paper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -48%) scale(.96); width: min(420px, 86vw); max-height: 74vh; overflow: auto; background: #fffdf6; border-radius: 12px; padding: 30px 32px; box-shadow: 0 20px 60px rgba(0,0,0,.55), inset 0 0 0 1px #e3d9c6; font-family: var(--hand); color: #3d2712; white-space: pre-wrap; line-height: 1.6; font-size: 16px; letter-spacing: 1px; opacity: 0; pointer-events: none; transition: opacity .35s ease .35s, transform .35s ease .35s; }
+  #letter.opened .l-paper { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  #letter .l-hint { position: absolute; left: 50%; bottom: -32px; transform: translateX(-50%); font-family: var(--hand); font-size: 14px; letter-spacing: 3px; color: #d9c3a3; animation: pulse 1.8s infinite; white-space: nowrap; }
+  #letter.opened .l-hint { display: none; }
+  #letter .close { position: absolute; top: -14px; right: -14px; width: 32px; height: 32px; border-radius: 50%; border: none; background: #efe0c6; color: var(--coffee); font-size: 16px; cursor: pointer; z-index: 3; opacity: 0; pointer-events: none; transition: opacity .35s ease .7s; }
+  #letter.opened .close { opacity: 1; pointer-events: auto; }
+
+  #bubble { position: absolute; z-index: 35; pointer-events: none; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 9px; background: #fffdf6; color: var(--coffee); padding: 9px 15px 9px 10px; border-radius: 16px; border-bottom-left-radius: 5px; box-shadow: 0 8px 24px rgba(0,0,0,.35), inset 0 0 0 1px #ecdcc0; font-size: 14px; white-space: nowrap; opacity: 0; transition: opacity .25s ease; }
+  #bubble.show { opacity: 1; animation: pop .28s cubic-bezier(.34,1.56,.64,1); }
+  #bubble .avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 20px; background: #f6e7cf; border: 2px solid #ecdcc0; }
+  #bubble .text { line-height: 1.4; }
+  #bubble::after { content: ""; position: absolute; left: 22px; bottom: -8px; border: 8px solid transparent; border-top-color: #fffdf6; border-bottom: none; }
+  @keyframes pop { 0% { transform: translate(-50%,-100%) scale(.55); } 100% { transform: translate(-50%,-100%) scale(1); } }
+
+  /* 生日蛋糕特写：返回咖啡屋按钮（吹蜡烛后出现） */
+  #exitBirthday { position: absolute; right: 22px; bottom: 22px; z-index: 38; display: none; font-family: var(--hand); font-size: 16px; letter-spacing: 2px; padding: 11px 24px; border: 1px solid #c98a3d; border-radius: 999px; background: linear-gradient(135deg, #fff6e6, #f5dfba); color: #7a5225; cursor: pointer; box-shadow: 0 10px 28px rgba(0,0,0,.45); transition: transform .2s, box-shadow .2s; }
+  #exitBirthday:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(160,110,50,.45); }
+  #exitBirthday.show { display: block; animation: pop2 .35s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop2 { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  #lightbox { position: absolute; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(15,10,6,.9); backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+  #lightbox.show { opacity: 1; pointer-events: auto; }
+  #lightbox img { max-width: 80vw; max-height: 70vh; border-radius: 6px; box-shadow: 0 24px 80px rgba(0,0,0,.6), inset 0 0 0 6px #fff8ec; }
+  #lightbox .caption { margin-top: 14px; color: #f3e7d0; font-size: 15px; letter-spacing: 1px; }
+  #lightbox .counter { color: #b99b72; font-size: 13px; margin-top: 6px; }
+  #lightbox .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; border: none; background: rgba(255,248,236,.12); color: #fff8ec; font-size: 20px; cursor: pointer; }
+  #lightbox .nav:hover { background: rgba(255,248,236,.28); }
+  #lightbox .nav.prev { left: 24px; } #lightbox .nav.next { right: 24px; }
+  #lightbox .close { position: absolute; top: 20px; right: 24px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,248,236,.12); color: #fff8ec; font-size: 18px; cursor: pointer; }
+
+  /* 长桌上的翻页书：点击后弹出的阅读层 */
+  #bookView { position: absolute; inset: 0; z-index: 76; display: flex; align-items: center; justify-content: center; background: rgba(12,8,4,.82); backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+  #bookView.show { opacity: 1; pointer-events: auto; }
+  #bookView iframe { width: min(1120px, 94vw); height: min(88vh, 920px); border: 0; border-radius: 8px; background: #f4ecdd; box-shadow: 0 30px 90px rgba(0,0,0,.6); }
+  #bookView .close { position: absolute; top: 20px; right: 24px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,248,236,.14); color: #fff8ec; font-size: 18px; cursor: pointer; }
+  #bookView .close:hover { background: rgba(255,248,236,.3); }
+
+  #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 60; background: #fffdf6; color: var(--coffee); padding: 10px 18px; border-radius: 999px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,.35); opacity: 0; transition: opacity .3s; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl" data-engine="three.js r160" width="2864" height="1536" style="touch-action: none;" class=""></canvas>
+
+  <div id="loading" class="hidden">
+    <div class="title">Café · Musique</div>
+    <div class="sub">MINIATURE CAFÉ · LOADING</div>
+    <div class="bar-wrap"><div class="bar" id="loadBar" style="width: 100%;"></div></div>
+    <div class="hint" id="loadHint">正在加载场景素材…</div>
+  </div>
+
+  <div id="start" class="hidden">
+    <div class="brand">Café · Musique</div>
+    <h1>Café · Musique</h1>
+    <div class="tap">☕ 点击进入 · 开启背景音乐</div>
+  </div>
+
+  <!-- 开业信封页：点兔子吐司 → 信封向上翻开、信纸抽出（开业曲起）→ 进入咖啡屋 -->
+  <div id="envelopePage">
+    <div class="env-stage">
+      <div class="env" id="theEnvelope">
+        <div class="env-back"></div>
+        <div class="letter-card">
+          <div class="lc-to">TO小音：</div>
+          <div class="lc-text">The opening of the coffee shop is auspicious.</div>
+        </div>
+        <div class="env-front">
+          <span class="st" style="left:9%;top:58%;font-size:13px">★</span>
+          <span class="st" style="left:16%;top:74%;font-size:11px;opacity:.6">☆</span>
+          <span class="st" style="left:12%;top:89%;font-size:13px">★</span>
+          <span class="st" style="left:27%;top:63%;font-size:10px;opacity:.7">★</span>
+          <span class="st" style="left:33%;top:83%;font-size:12px;opacity:.6">☆</span>
+          <span class="st" style="left:45%;top:69%;font-size:11px">★</span>
+          <span class="st" style="left:50%;top:88%;font-size:10px;opacity:.7">★</span>
+          <span class="st" style="left:60%;top:61%;font-size:12px;opacity:.6">☆</span>
+          <span class="st" style="left:68%;top:79%;font-size:11px">★</span>
+          <span class="st" style="left:78%;top:57%;font-size:13px">★</span>
+          <span class="st" style="left:86%;top:71%;font-size:10px;opacity:.6">☆</span>
+          <span class="st" style="left:88%;top:89%;font-size:12px">★</span>
+          <span class="st" style="left:23%;top:94%;font-size:9px;opacity:.55">☆</span>
+          <span class="st" style="left:58%;top:93%;font-size:10px;opacity:.55">☆</span>
+        </div>
+        <div class="env-flap"></div>
+      </div>
+    </div>
+    <button class="env-open-btn" id="envOpenBtn">
+      <span class="badge"><img src="./images/bunny-toast.png" alt="兔子吐司"></span>
+      <span class="lbl">OPEN IT</span>
+    </button>
+    <button class="env-enter-btn" id="envEnter">进入 Café · Musique ☕</button>
+  </div>
+
+  <div id="hud">
+    <b>🖱 操作</b><br>
+    左键拖拽 · 旋转视角<br>
+    滚轮 · 缩放<br>
+    点击吧台 / 中间椅子 · 点单<br>
+    点击墙上相框 · 放大查看
+  </div>
+
+  <div id="menu">
+    <div class="card">
+      <button class="close" id="menuClose">✕</button>
+      <div class="menu-title">MENU</div>
+      <div class="menu-sub">Café · Musique · 今日点单</div>
+      <div class="section"><span class="zh">咖啡</span><span class="en">Espresso</span></div>
+      <div class="grid" id="menuCoffee"></div>
+      <div class="section"><span class="zh">甜品</span><span class="en">Dessert</span></div>
+      <div class="grid" id="menuDessert"></div>
+    </div>
+  </div>
+
+  <div id="letter">
+    <div class="letter-stage">
+      <div class="env" id="letterEnv">
+        <div class="env-back"></div>
+        <div class="env-front"></div>
+        <div class="env-flap"></div>
+      </div>
+      <div class="l-paper"><div id="letterContent"></div></div>
+      <div class="l-hint">点 击 拆 信</div>
+      <button class="close" id="letterClose">✕</button>
+    </div>
+  </div>
+
+  <div id="lightbox">
+    <img id="lightboxImg" alt="照片预览">
+    <div class="caption" id="lightboxCaption"></div>
+    <div class="counter" id="lightboxCounter"></div>
+    <button class="nav prev" id="lbPrev">‹</button>
+    <button class="nav next" id="lbNext">›</button>
+    <button class="close" id="lbClose">✕</button>
+  </div>
+
+  <div id="bookView">
+    <iframe id="bookFrame" title="翻页书"></iframe>
+    <button class="close" id="bookViewClose">✕</button>
+  </div>
+
+  <div id="bubble"><span class="avatar">🐰</span><span class="text"></span></div>
+  <button id="exitBirthday" title="退出蛋糕特写，回到 Café · Musique">← 返回 Café · Musique</button>
+  <div id="toast" class=""></div>
+
+  <!-- 背景音乐：把 mp3 放到 ./audio/ 下即可 -->
+  <audio id="bgmOpening" src="./audio/opening.mp3" loop preload="auto"></audio>
+  <audio id="bgmBirthday" src="./audio/happy-birthday.mp3" loop preload="metadata"></audio>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://registry.npmmirror.com/three/0.160.0/files/build/three.module.js",
+    "three/addons/": "https://registry.npmmirror.com/three/0.160.0/files/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* ============================================================================
+ * 0) 场景配置
+ * ==========================================================================*/
+const SCENE_CONFIG = {
+  showPlaceholders: false,
+  showLabels: false,
+
+  camera: { position: [24, 24, 24], target: [0, 2, -2], orthoSize: 15, near: 0.1, far: 200 },
+
+  barView: { position: [8.0, 1.85, -8.8], target: [11.5, 1.25, -8.8] },  // 吧台点单视角
+
+  // ★★★ 蛋糕视角（正面平视，蛋糕适中 + 周边吧台背景可见）★★★
+  cakeView: { position: [7.2, 1.66, -8.8], target: [11.5, 1.42, -8.8], zoom: 30 },   // 略俯平视，越过吧台前沿看到完整蛋糕
+
+  // ★★★ 空间适中尺寸：width 32，depth 26，height 5.5（不过大）★★★
+  room: {
+    width: 32, depth: 26, height: 5.5,
+    floorTexture: './models/textures/floor_diff.jpg',
+    floorBump: './models/textures/floor_disp.png',
+    wallColor: '#f3f0e8',   // 白色瓷砖墙（小白砖）
+  },
+
+  coffeeBarId: 'coffee-bar',
+  bubbleAnchorId: 'chiikawa-doll',
+  bubbleOffsetY: 1.1,
+
+  models: [
+    // ⚠️ 椅子朝向约定：假设模型正面朝 +Z。若方向反了，把该椅子 rotation.y 加 π。
+
+    // —— 一、B区吧台（右上，竖放，长轴南北，柜门朝东）——
+    { id: 'coffee-bar', name: '咖啡吧台', path: './models/coffee_bar.glb',
+      position: [11.5, 0, -8.8], rotation: [0, Math.PI / 2, 0], scale: [1.4, 1, 1], receiveShadow: true, castShadow: true, interactive: 'coffee-bar',
+      fitTo: { height: 1.3 }, placeholderSize: [6.0, 1.3, 1.9], color: '#8a5a2b' },
+    { id: 'table-lamp', name: '台灯', path: './models/table_lamp.glb',
+      position: [11.5, 1.3, -12.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.55 }, excludeNodes: ['AltShade', 'Painted Gold', 'No Shade'], placeholderSize: [0.45, 0.55, 0.35], color: '#c98a3d' },
+    { id: 'coffee-grinder', name: '咖啡豆研磨机', path: './models/coffee_grinder.glb',
+      position: [11.5, 1.3, -11.0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.8 }, placeholderSize: [0.8, 0.8, 0.8], color: '#6b4a2a' },
+    { id: 'coffee-machine', name: '咖啡机', path: './models/coffee_machine.glb',
+      position: [11.5, 1.3, -9.7], rotation: [0, -Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.5 }, placeholderSize: [0.5, 0.5, 0.4], color: '#8a6f52' },  // 素材待补
+    { id: 'ceramic-cup', name: '陶瓷杯盘', path: './models/tea_cup.glb',
+      position: [11.5, 1.268, -7.4], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.45 }, placeholderSize: [0.45, 0.45, 0.45], color: '#e6dfd0' },
+    { id: 'chiikawa-doll', name: '猫咪玩偶', path: './models/cat_plushie/scene.gltf',
+      position: [11.5, 1.3, -6.3], scale: [0.55, 0.55, 0.55], receiveShadow: true, castShadow: true, interactive: 'clickable',
+      fitTo: { height: 0.4 }, placeholderSize: [0.3, 0.4, 0.3], color: '#f2c37a' },
+    { id: 'milk-tea', name: '奶茶杯', path: './models/milk_tea.glb',
+      position: [12.15, 1.3, -5.35], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.3 }, placeholderSize: [0.3, 0.45, 0.3], color: '#e3d1b0' },  // 往前(东南)挪，避开南端唱片机
+    // —— 吧台面上最南端：唱片机（用户自备模型，前脸双喇叭侧朝东面向房间）——
+    { id: 'record-player', name: '唱片机', path: './models/record_player_for_vinyls.glb',
+      position: [11.5, 1.3, -5.53], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      interactive: 'record-player',
+      fitTo: { size: 0.5 }, placeholderSize: [0.5, 0.19, 0.45], color: '#3a3a3a' },
+    { id: 'pendant-lamp', name: '古铜吊灯', path: './models/ceiling_light.glb',
+      position: [-3.5, 5.0, -5], anchor: 'top', receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.25 }, placeholderSize: [0.7, 1.25, 0.7], color: '#c98a3d' },
+    // —— 吧台南端外侧：两组面包陈列架，平行紧贴、正面朝西与吧台顾客侧齐平，高度与吧台一致(1.3) ——
+    { id: 'bread-shelf-1', name: '面包陈列架1', path: './models/bread_shelf.glb',
+      position: [10.75, 0, -3.94], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.3 }, placeholderSize: [0.84, 1.3, 2.58], color: '#8a5a2b' },
+    { id: 'bread-shelf-2', name: '面包陈列架2', path: './models/bread_shelf.glb',
+      position: [10.75, 0, -1.36], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.3 }, placeholderSize: [0.84, 1.3, 2.58], color: '#8a5a2b' },
+
+    // —— 二、右墙（东墙）——
+    { id: 'display-cabinet', name: '后场储物柜', path: './models/cabinet.glb',
+      position: [15.75, 0, -10.9], rotation: [0, -Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 2.1 }, placeholderSize: [4.2, 2.1, 0.4], color: '#5a3d28' },  // 柜门面朝西（朝向吧台）；高2.1→长约4.0，四面留空不穿墙/不压挂画
+    { id: 'wall-pictures', name: '咖啡挂画', path: './models/wall_pictures.glb',
+      position: [15.93, 2.8, -8], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.1, 1.1, 2.6], color: '#8a6f52' },  // 模型原生面片朝±x，无需旋转（之前 -π/2 导致横穿东墙）
+
+    // —— 三、北墙区（Classic Coffee Table 高脚吧台 + NESSIE 高脚凳 + 经典桌灯 + 吧台书 + 吧台左边的窄书架 + 通顶大书架 + 吧台右边电脑桌）——
+    // ★ 吧台延长：实测模型 fit height 1.25 时只有 3.39m 宽 → X 方向拉伸 2.24 倍到 7.58m
+    //   西端 x=-0.58 正好贴上北墙书架（书架东面 x≈-0.58），东端 x=7.0 对齐镜子
+    { id: 'north-high-bar', name: '北墙高脚吧台', path: './models/classic_coffee_table.glb',
+      position: [3.21, 0, -12.25], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.25 }, scale: [2.24, 1, 1], placeholderSize: [7.58, 1.25, 1.5], color: '#8a5a2b' },
+    // ★ NESSIE 高脚凳：塞吧台台面下（z=-11.9，吧台前缘 z≈-12.05 → 凳子在 -12.05+0.15 处），面朝吧台（rotation.y=π），height=1.05
+    { id: 'north-bar-stool-1', name: '高脚凳1', path: './models/nessie_nsb-01.glb',
+      position: [2.5, 0, -11.9], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.2 }, placeholderSize: [0.45, 1.2, 0.45], color: '#3d2a18' },
+    { id: 'north-bar-stool-2', name: '高脚凳2', path: './models/nessie_nsb-01.glb',
+      position: [4.0, 0, -11.9], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.2 }, placeholderSize: [0.45, 1.2, 0.45], color: '#3d2a18' },
+    { id: 'north-bar-stool-3', name: '高脚凳3', path: './models/nessie_nsb-01.glb',
+      position: [5.5, 0, -11.9], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.2 }, placeholderSize: [0.45, 1.2, 0.45], color: '#3d2a18' },
+    { id: 'north-bar-lamp', name: '北墙吧台灯', path: './models/classic_table_lamp.glb',
+      position: [5.8, 1.25, -12.4], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.5 }, placeholderSize: [0.4, 0.5, 0.35], color: '#c98a3d' },
+    { id: 'north-bar-books', name: '北墙吧台书', path: './models/books.glb',
+      position: [2.5, 1.25, -12.4], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.22 }, placeholderSize: [0.35, 0.22, 0.25], color: '#6b4a2a' },
+
+    // ★ 北墙书架（实测：有书的一面原生朝 -X / 西）→ rotation.y=0，书直接朝西
+    // 书架宽 2.41m 沿 Z 轴铺开、深 0.83m 沿 X：左侧面贴北墙（z=-13），主体往南延伸 z≈-13 ~ -10.6
+    { id: 'north-tall-bookshelf', name: '北墙通顶大书架', path: './models/bookshelf_cc0.glb',
+      position: [-1.0, 0, -11.8], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 4.5 }, placeholderSize: [0.83, 4.5, 2.41], color: '#3d2a18' },
+    // ★ 吧台**右边**放电脑桌（吧台左端 x=1.0，吧台右端 x=7.0）
+    { id: 'north-desk', name: '北墙电脑桌', path: './models/simple_wooden_side_table.glb',
+      position: [9.5, 0, -11.8], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.75 }, placeholderSize: [1.0, 0.75, 0.6], color: '#6b4a2a' },
+
+    // ★ 中心杂志架：跟着长木桌走（x=-4.1），和桌子之间留 ≈0.46m 空隙（桌面南缘 z≈-10.15，架子北缘 z≈-9.69）
+    // 实测封面原生朝 +X / 东 → rotation.y=-π/2 让封面朝 +Z（南），背板对着桌子
+    // 宽 3.0m 沿 X → x≈-5.6~-2.6，高 1.5m、深 0.97m
+    { id: 'center-magazine-rack', name: '杂志架', path: './models/magazine_rack_full_of_geo_articles.glb',
+      position: [-4.1, 0, -9.2], rotation: [0, -Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 3.0 }, scale: [0.55, 0.5, 1.8], placeholderSize: [3.01, 1.5, 0.97], color: '#6b4a2a' },
+
+    { id: 'side-cabinet', name: '储物柜②', path: './models/dining_cabinet.glb',
+      position: [-10.5, 0, -12], receiveShadow: true, castShadow: true,
+      fitTo: { height: 2.85 }, placeholderSize: [1.2, 2.85, 0.45], color: '#5a3d28' },
+    { id: 'wall-mirror', name: '墙镜', path: './models/wall_mirror.glb',
+      position: [7, 1.6, -12.95], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.9 }, placeholderSize: [1.1, 1.9, 0.1], color: '#c8c0b0' },
+
+    // —— 四、左墙（西墙）——
+    // ★ 新家具（带台灯的小边柜）：放在钢琴右侧落地灯（z=6.8）再往北一点的空位 z=5.6，不挨钢琴
+    // 宽 1.21m 沿墙（Z → z≈5.0~6.2）、深 0.49m 出墙（X）；落地灯占 z≈6.5~7.1，中间留 0.3m 缝
+    { id: 'west-bookshelf', name: '西墙小边柜（带台灯）', path: './models/bookshelf_west.glb',
+      position: [-15.45, 0, 5.6], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.7 }, placeholderSize: [0.49, 1.7, 1.21], color: '#3d2a18' },
+    // 置物架回到原位 z=-2，书 / 唱片架才能落回层板上
+    { id: 'shelf', name: '置物架', path: './models/shelf.glb',
+      position: [-14.5, 0, -2], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 4.6 }, placeholderSize: [1.0, 4.6, 0.5], color: '#5a3d28' },
+    // ★ 西墙再加一个和北墙同款的书架（bookshelf_cc0.glb），紧挨置物架南侧
+    // 实测有书一面原生朝 -X → rotation.y=π 翻过来让书朝东（面向房间）
+    // 高度同北墙 4.5m，占地 深0.83 沿 X（x≈-15.06~-14.24，和置物架前沿对齐）、宽2.41 沿 Z（z≈-1.2~1.21）
+    { id: 'west-tall-bookshelf', name: '西墙通顶大书架', path: './models/bookshelf_cc0.glb',
+      position: [-14.65, 0, 0], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 4.5 }, placeholderSize: [0.83, 4.5, 2.41], color: '#3d2a18' },
+    { id: 'books', name: '书', path: './models/books.glb',
+      position: [-14.5, 1.619, -1.55], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.8 }, placeholderSize: [0.8, 0.3, 0.8], color: '#6b4a2a' },  // 书架第3层板面(y≈1.619)，唱片架北侧
+    { id: 'record-table', name: '黑胶唱片架', path: './models/record_table.glb',
+      position: [-14.5, 1.62, -2.35], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.75 }, placeholderSize: [0.58, 0.75, 0.39], color: '#8a5a2b' },  // 书架第3层板面(y≈1.619)，四周留空不穿模
+    { id: 'piano', name: '复古立式钢琴', path: './models/piano.glb',
+      position: [-15.35, 0, 10], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 2.3 }, placeholderSize: [1.5, 2.3, 0.65], color: '#2a2a2a' },
+    { id: 'piano-bench', name: '钢琴凳', path: './models/piano_bench.glb',
+      position: [-14.2, 0, 10], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.5 }, placeholderSize: [1.05, 0.5, 0.43], color: '#4a2f1c' },
+
+    // —— 四·补 · 钢琴角（画框墙 + 椭圆镜 + 落地灯 + 边桌花瓶）——
+    { id: 'floor-lamp', name: '复古落地灯', path: './models/1920s_standing_floor_lamps_type_a.glb',
+      position: [-15.35, 0, 6.8], receiveShadow: true, castShadow: true,
+      excludeNodes: ['Wood02', 'Wood Lacquer', 'ALT Shade'],
+      fitTo: { height: 1.75 }, placeholderSize: [0.6, 1.75, 0.6], color: '#c98a3d' },
+    { id: 'side-table', name: '边桌', path: './models/simple_wooden_side_table.glb',
+      position: [-15.15, 0, 12.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.9 }, placeholderSize: [1.0, 0.9, 1.0], color: '#6b4a2a' },
+    { id: 'art-mirror', name: '椭圆墙镜', path: './models/wall_mirror.glb',
+      position: [-15.9, 3.2, 10.0], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.4 }, placeholderSize: [0.8, 1.4, 0.1], color: '#c8c0b0' },
+    { id: 'art-wall-1', name: '挂画组1', path: './models/wall_pictures.glb',
+      position: [-15.95, 3.35, 8.75], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.55 }, placeholderSize: [0.1, 0.55, 1.3], color: '#8a6f52' },
+    { id: 'art-wall-2', name: '挂画组2', path: './models/wall_pictures.glb',
+      position: [-15.95, 3.35, 11.25], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.55 }, placeholderSize: [0.1, 0.55, 1.3], color: '#8a6f52' },
+    { id: 'art-wall-3', name: '挂画组3', path: './models/wall_pictures.glb',
+      position: [-15.95, 2.55, 8.75], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.55 }, placeholderSize: [0.1, 0.55, 1.3], color: '#8a6f52' },
+    { id: 'art-wall-4', name: '挂画组4', path: './models/wall_pictures.glb',
+      position: [-15.95, 2.55, 11.25], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.55 }, placeholderSize: [0.1, 0.55, 1.3], color: '#8a6f52' },
+
+    // —— 五、中部休闲区 ——
+    // ★ 红色小圆桌在 x=5.5，地毯和凳子一起跟
+    { id: 'table-b', name: '红色小圆桌', path: './models/table_round.glb',
+      position: [5.5, 0, 0], scale: [2.2, 1, 2.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.95 }, placeholderSize: [1.4, 0.95, 1.4], color: '#8a3a2a' },
+    { id: 'stool', name: '圆凳', path: './models/stool.glb',
+      position: [3.4, 0, 0.5], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.75 }, placeholderSize: [0.4, 0.75, 0.4], color: '#4a2f1c' },
+    // ★ 长方形桌整组（地毯 + 桌 + 两把椅子）与中央小吧台、红圆桌等间距排列：
+    //   小吧台 x=-0.5 居中，两侧各 6m → 长桌中心 x=-6.5、红圆桌 x=5.5；桌长 3.81 沿 X、宽 2.02 沿 Z
+    { id: 'table-rect-rug', name: '新桌地毯', path: './models/carpet_table.glb?v=1029a',
+      position: [-6.5, 0.02, 0.4], rotation: [0, 0, 0], scale: [1.35, 1, 1.6], receiveShadow: true, castShadow: false,
+      placeholderSize: [4.18, 0.02, 3.21], color: '#8b3a2a' },
+    // ★ 圆桌旁边新加的长方形桌子（参考北边长木桌 2.8 长 × 1.47 宽 × 0.99 高，这里做得更大）
+    //   原生 4.46 × 1.86 × 2.37 → fit 高 0.99（与长木桌桌面同高）+ 横向 1.6 倍 → 约 3.81 × 0.99 × 2.02m
+    { id: 'table-rect-new', name: '长方形桌（带桌布）', path: './models/table_and_tablecloth.glb?v=1029a',
+      position: [-6.5, 0, 0.4], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.99 }, scale: [1.6, 1, 1.6], placeholderSize: [3.81, 0.99, 2.02], color: '#c9b193' },
+    // 配套两把椅子：与窗下吧台同一 model（chair_wood.glb）、同样 0.85m 高
+    { id: 'table-rect-chair-1', name: '长方桌椅1', path: './models/chair_wood.glb',
+      position: [-6.5, 0, -0.96], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.85 }, placeholderSize: [0.36, 0.85, 0.45], color: '#6b4a2a' },
+    { id: 'table-rect-chair-2', name: '长方桌椅2', path: './models/chair_wood.glb',
+      position: [-6.5, 0, 1.76], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.85 }, placeholderSize: [0.36, 0.85, 0.45], color: '#6b4a2a' },
+    // ★ 桌上放翻页书：点击打开阅读层（道具为摊开的书，位置略高于桌布防穿模）
+    { id: 'birthday-book', name: '桌上的翻页书', path: './models/open_book.glb',
+      position: [-5.3, 1.005, 0.4], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.7 }, placeholderSize: [0.7, 0.16, 0.5], color: '#f5dcc0', interactive: 'birthday-book' },
+    // ★ 桌子挪走后空出的中央位置：放一张与东墙窗下同款的小吧台（无椅子）
+    { id: 'center-bench', name: '中央小吧台', path: './models/table_from_a_gothic_library.glb',
+      position: [-0.5, 0, 0.5], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { width: 1.5 }, placeholderSize: [1.5, 0.55, 0.45], color: '#8a5a2b' },
+    // ★ 红圆桌台面：全部用你下载的新模型填满！
+    { id: 'red-table-birthday-cake', name: '红圆桌生日蛋糕', path: './models/birthday_cake.glb',
+      position: [5.5, 0.95, 0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.55 }, placeholderSize: [0.55, 0.55, 0.55], color: '#e8d5b7' },
+    { id: 'red-table-cookiecat', name: '红圆桌曲奇猫', path: './models/cookiecat.glb',
+      position: [4.9, 0.95, -0.4], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.32 }, placeholderSize: [0.32, 0.32, 0.32], color: '#d9a05b' },
+    { id: 'red-table-fruit', name: '红圆桌水果篮', path: './models/fruit.glb',
+      position: [6.1, 0.95, 0.3], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.42 }, placeholderSize: [0.42, 0.42, 0.42], color: '#c98a5a' },
+    { id: 'red-table-latte', name: '红圆桌拿铁', path: './models/latte.glb',
+      position: [5.2, 0.95, 0.5], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.38 }, placeholderSize: [0.5, 0.5, 0.5], color: '#c98a5a' },
+    { id: 'red-table-tea-cup', name: '红圆桌茶杯', path: './models/tea_cup.glb',
+      position: [5.8, 0.95, 0.5], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.38 }, placeholderSize: [0.45, 0.45, 0.45], color: '#e6dfd0' },
+    { id: 'red-table-tiramisu', name: '红圆桌提拉米苏', path: './models/tiramisu/scene.gltf',
+      position: [5.5, 0.95, -0.6], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.3 }, placeholderSize: [0.32, 0.32, 0.32], color: '#8a5a2b' },
+    { id: 'red-table-pudding', name: '红圆桌布丁', path: './models/cherry_pudding/scene.gltf',
+      position: [6.2, 0.95, -0.3], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.26 }, placeholderSize: [0.28, 0.28, 0.28], color: '#e8c877' },
+
+    // ★ 原 decor_table 回归西原位置
+    { id: 'table-c', name: '西墙装饰大圆桌', path: './models/decor_table.glb',
+      position: [-13.5, 0, -9], scale: [2.2, 1, 2.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.0 }, placeholderSize: [1.9, 1.0, 1.9], color: '#8a5a2b' },
+
+    // —— 五·补：长方形木桌整体旋转 90°（长轴改南北向），整组再往西挪 0.8m，离北墙书架更远 ——
+    // 桌宽 2.8m 沿 Z（z≈-12.95~-10.15）、进深 ≈1.0m 沿 X（x≈-4.6~-3.6）；书架西缘 x=-1.42，东沙发到书架留 ≈1.0m
+    { id: 'center-long-table', name: '中心长木桌', path: './models/wooden_table_game_ready_asset.glb',
+      position: [-4.1, 0, -11.55], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { width: 2.8 }, placeholderSize: [1.0, 0.9, 2.8], color: '#8a5a2b' },
+    { id: 'center-long-lamp', name: '长木桌灯', path: './models/classic_table_lamp.glb',
+      position: [-4.1, 0.9, -12.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.5 }, placeholderSize: [0.4, 0.5, 0.35], color: '#c98a3d' },
+    { id: 'center-long-openbook', name: '长木桌摊开书', path: './models/open_book.glb',
+      position: [-4.1, 0.9, -10.9], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.35 }, placeholderSize: [0.35, 0.1, 0.25], color: '#f5dcc0' },
+    // ★ 沙发一边一个：西侧朝东、东侧朝西，都对着长木桌
+    // 沙发旋转后 宽 1.8 沿 Z、深 0.8 沿 X
+    { id: 'sofa-front', name: '长木桌西沙发', path: './models/sofa (1).glb',
+      position: [-5.35, 0, -11.55], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.85 }, placeholderSize: [0.8, 0.85, 1.8], color: '#5a7a3a' },
+    { id: 'sofa-back', name: '长木桌东沙发', path: './models/sofa (1).glb',
+      position: [-2.85, 0, -11.55], rotation: [0, -Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.85 }, placeholderSize: [0.8, 0.85, 1.8], color: '#5a7a3a' },
+
+    // —— 五·补、东墙窗下：table_from_a_gothic_library 旋转 90° 正面向房间，不穿东墙 ——
+    // rotation.y=0 长轴沿 x（东西方向跟窗户对齐），中心 x=14.9 离东墙 1.1m，两端 14.15~15.65 不穿墙
+    { id: 'window-bench', name: '窗下小吧台', path: './models/table_from_a_gothic_library.glb',
+      position: [14.9, 0, 4], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { width: 1.5 }, placeholderSize: [1.5, 0.55, 0.45], color: '#8a5a2b' },
+    { id: 'window-bench-openbook', name: '窗下吧台书', path: './models/open_book.glb',
+      position: [14.9, 0.55, 4.3], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.28 }, placeholderSize: [0.28, 0.08, 0.2], color: '#f5dcc0' },
+    { id: 'window-bench-chair', name: '窗下小靠背椅', path: './models/chair_wood.glb',
+      position: [14.4, 0, 4], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.85 }, placeholderSize: [0.36, 0.85, 0.45], color: '#6b4a2a' },
+
+    // —— 六、南侧客座区（三张桌子，位置不动）——
+    { id: 'table-set-1', name: '餐桌区1', path: './models/table_set.glb',
+      position: [-6, 0, 10], receiveShadow: true, castShadow: true,
+      fitTo: { height: 2.4 }, placeholderSize: [3.0, 2.4, 3.0], color: '#5a3d28' },
+    { id: 'table-set-2', name: '餐桌区2', path: './models/table_set.glb',
+      position: [4, 0, 10], receiveShadow: true, castShadow: true,
+      fitTo: { height: 2.4 }, placeholderSize: [3.0, 2.4, 3.0], color: '#5a3d28' },
+    { id: 'table-a', name: '实木圆桌', path: './models/table_round.glb',
+      position: [-1, 0, 8.5], scale: [2.2, 1, 2.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.95 }, placeholderSize: [1.4, 0.95, 1.4], color: '#5a3d28' },
+    { id: 'chair-1', name: '靠背木椅1', path: './models/chair_wood.glb',
+      position: [-1, 0, 7], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },
+    { id: 'chair-2', name: '靠背木椅2', path: './models/chair_wood.glb',
+      position: [-1, 0, 10], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },
+    { id: 'chair-3', name: '中间椅子', path: './models/chair_wood.glb',
+      position: [13.5, 0, -8.8], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true, interactive: 'coffee-bar',
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },  // 吧台东侧（操作面一侧）
+
+    // —— 桌a 甜点/饮料（跟随圆桌1）——
+    { id: 'latte', name: '拿铁拉花', path: './models/latte.glb',
+      position: [-1, 0.95, 8.5], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.5 }, placeholderSize: [0.5, 0.5, 0.5], color: '#c98a5a' },
+    { id: 'pudding', name: '樱桃布丁', path: './models/cherry_pudding/scene.gltf',
+      position: [-1.35, 0.95, 8.8], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.28 }, placeholderSize: [0.28, 0.28, 0.28], color: '#e8c877' },
+    { id: 'tiramisu', name: '提拉米苏', path: './models/tiramisu/scene.gltf',
+      position: [-0.65, 0.95, 8.8], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.32 }, placeholderSize: [0.32, 0.32, 0.32], color: '#8a5a2b' },
+    { id: 'cat-face-bread', name: '猫脸面包', path: './models/cat_face_bread.glb',
+      position: [-1.35, 0.95, 8.2], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.25 }, placeholderSize: [0.5, 0.3, 0.5], color: '#e3a34b' },
+    { id: 'bread-basket', name: '藤编面包篮', path: './models/bread_basket.glb',
+      position: [-10.5, 2.85, -12.05], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.45 }, placeholderSize: [0.6, 0.4, 0.5], color: '#c98a4b' },  // 放到储物柜②顶面上
+    // —— ★ 西北角大盆栽（完全紧贴角落）——
+    { id: 'plant-corner', name: '角落大盆栽', path: './models/plant.glb',
+      position: [-15.4, 0, -12.4], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.6 }, placeholderSize: [1.2, 1.6, 1.2], color: '#5a7a3a' },
+
+    // —— 额外（规格书未列，保留新素材不遗漏）：猫和书 / 咖啡蛋糕 ——
+    { id: 'cat-books', name: '猫和书', path: './models/cat_books.glb',
+      position: [-14.5, 1.096, -1.5], rotation: [0, Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.6 }, placeholderSize: [0.6, 0.6, 0.6], color: '#c98a5a' },  // 书架第2层板面(y≈1.096)
+    { id: 'coffee-cake', name: '咖啡蛋糕', path: './models/coffee_cake.glb',
+      position: [5.5, 0.95, -0.4], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.4 }, placeholderSize: [0.45, 0.45, 0.45], color: '#8a5a2b' },
+    // —— ★ 第二轮：散在中间的空桌补杯/甜品 → 全部搬去红圆桌！——
+    { id: 'latte-2', name: '拿铁2', path: './models/latte.glb',
+      position: [5.2, 0.95, 0.4], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.4 }, placeholderSize: [0.5, 0.5, 0.5], color: '#c98a5a' },
+    { id: 'ceramic-cup-2', name: '陶瓷杯2', path: './models/tea_cup.glb',
+      position: [5.8, 0.95, 0.4], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.4 }, placeholderSize: [0.45, 0.45, 0.45], color: '#e6dfd0' },
+    { id: 'ceramic-cup-3', name: '陶瓷杯3', path: './models/tea_cup.glb',
+      position: [5.1, 0.95, 0.0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.4 }, placeholderSize: [0.45, 0.45, 0.45], color: '#e6dfd0' },
+    { id: 'tiramisu-2', name: '提拉米苏2', path: './models/tiramisu/scene.gltf',
+      position: [5.9, 0.95, 0.0], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.28 }, placeholderSize: [0.32, 0.32, 0.32], color: '#8a5a2b' },
+
+    // —— ★ 西墙第四组：圆桌2（与圆桌1同款同尺寸）+ 2椅 ——
+    { id: 'table-a-2', name: '实木圆桌2', path: './models/table_round.glb',
+      position: [9, 0, 8.5], scale: [2.2, 1, 2.2], receiveShadow: true, castShadow: true,
+      fitTo: { height: 0.95 }, placeholderSize: [1.4, 0.95, 1.4], color: '#5a3d28' },
+    { id: 'chair-4', name: '靠背木椅4', path: './models/chair_wood.glb',
+      position: [9, 0, 7], rotation: [0, 0, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },
+    { id: 'chair-5', name: '靠背木椅5', path: './models/chair_wood.glb',
+      position: [9, 0, 10], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },
+    // —— 圆桌2 甜点（与圆桌1一致）——
+    { id: 'latte-3', name: '拿铁3', path: './models/latte.glb',
+      position: [9, 0.95, 8.5], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.5 }, placeholderSize: [0.5, 0.5, 0.5], color: '#c98a5a' },
+    { id: 'pudding-2', name: '樱桃布丁2', path: './models/cherry_pudding/scene.gltf',
+      position: [8.65, 0.95, 8.8], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.28 }, placeholderSize: [0.28, 0.28, 0.28], color: '#e8c877' },
+    { id: 'tiramisu-3', name: '提拉米苏3', path: './models/tiramisu/scene.gltf',
+      position: [9.35, 0.95, 8.8], receiveShadow: true, castShadow: true,
+      fitTo: { size: 0.32 }, placeholderSize: [0.32, 0.32, 0.32], color: '#8a5a2b' },
+
+    // —— ★ 两圆桌正上方吊灯（方桌上方不加）——
+    { id: 'pendant-lamp-1', name: '圆桌1吊灯', path: './models/ceiling_light.glb',
+      position: [-1, 5.0, 8.5], anchor: 'top', receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.25 }, placeholderSize: [0.7, 1.25, 0.7], color: '#c98a3d' },
+    { id: 'pendant-lamp-2', name: '圆桌2吊灯', path: './models/ceiling_light.glb',
+      position: [9, 5.0, 8.5], anchor: 'top', receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.25 }, placeholderSize: [0.7, 1.25, 0.7], color: '#c98a3d' },
+
+    // —— ★ 白色圆桌旁对角两把椅子（面向桌子）——
+    { id: 'chair-extra-1', name: '对角椅1', path: './models/chair_wood.glb',
+      position: [-11, 0, -9], rotation: [0, -Math.PI / 2, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },
+    { id: 'chair-extra-2', name: '对角椅2', path: './models/chair_wood.glb',
+      position: [-13.5, 0, -6.5], rotation: [0, Math.PI, 0], receiveShadow: true, castShadow: true,
+      fitTo: { height: 1.1 }, placeholderSize: [0.5, 1.1, 0.5], color: '#4a2f1c' },
+  ],
+
+  photoFrames: [
+    // —— 北墙 z=-12.97 ——
+    { id: 'frame-1', position: [-12, 2.6, -12.97], rotation: [0, 0, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-1.jpg'] },
+    { id: 'frame-2', position: [-8, 2.6, -12.97], rotation: [0, 0, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-2.jpg'] },
+    { id: 'frame-3', position: [10.5, 2.6, -12.97], rotation: [0, 0, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-3.jpg'] },
+    { id: 'frame-4', position: [13.5, 2.6, -12.97], rotation: [0, 0, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-4.jpg'] },
+    // —— 西墙 x=-15.97 ——
+    { id: 'frame-5', position: [-15.97, 2.6, 4], rotation: [0, Math.PI / 2, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-5.jpg'] },
+    { id: 'frame-6', position: [-15.97, 2.6, -6], rotation: [0, Math.PI / 2, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-6.jpg'] },
+    // —— 东墙 x=15.97 ——
+    // frame-7 已移除：原位（z=4）改为木框窗户
+    { id: 'frame-8', position: [15.97, 2.6, -6], rotation: [0, -Math.PI / 2, 0], size: [1.2, 1.5], photoUrls: ['./photos/poster-8.jpg'] },
+  ],
+};
+
+/* ============================================================================
+ * 1) 场景初始化
+ * ==========================================================================*/
+const app = document.getElementById('app');
+const canvas = document.getElementById('gl');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#241a13');
+
+const orthoSize = SCENE_CONFIG.camera.orthoSize;
+const camera = new THREE.OrthographicCamera(-orthoSize, orthoSize, orthoSize, -orthoSize, SCENE_CONFIG.camera.near, SCENE_CONFIG.camera.far);
+camera.position.set(...SCENE_CONFIG.camera.position);
+camera.lookAt(...SCENE_CONFIG.camera.target);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+window.__cam = camera; window.__controls = controls; window.__scene = scene;   // 调试暴露
+controls.target.set(...SCENE_CONFIG.camera.target);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.screenSpacePanning = true;
+controls.minPolarAngle = 0.2;
+controls.maxPolarAngle = 1.56;   // ≈89°（几乎水平，允许蛋糕正面平视）
+controls.minAzimuthAngle = -2.09;   // -120°（允许向左转）
+controls.maxAzimuthAngle = 2.09;    // +120°
+controls.minZoom = 0.4;
+controls.maxZoom = 200;   // 允许拉近到蛋糕特写(zoom≈150)，也能拉远看全貌
+controls.update();
+
+/* ============================================================================
+ * 2) 灯光系统（环境光已调暗）
+ * ==========================================================================*/
+const lights = {};
+function setupLighting() {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  lights.envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = lights.envTexture;
+  scene.environmentIntensity = 0.25;
+
+  lights.ambient = new THREE.AmbientLight('#fff2e0', 0.12);
+  scene.add(lights.ambient);
+
+  lights.spot = new THREE.SpotLight('#ffc98a', 28, 40, Math.PI / 5, 0.45, 1.2);
+  lights.spot.position.set(6, 12, 6);
+  lights.spot.target.position.set(0, 0, 0);
+  lights.spot.castShadow = true;
+  lights.spot.shadow.mapSize.set(1024, 1024);
+  lights.spot.shadow.camera.near = 1;
+  lights.spot.shadow.camera.far = 40;
+  lights.spot.shadow.bias = -0.0004;
+  lights.spot.shadow.normalBias = 0.02;
+  scene.add(lights.spot, lights.spot.target);
+
+  lights.bulb = new THREE.PointLight('#ffb35c', 6, 12, 1.8);
+  lights.bulb.position.set(0, 3.0, 0.8);
+  lights.bulb.castShadow = true;
+  lights.bulb.shadow.mapSize.set(512, 512);
+  lights.bulb.shadow.bias = -0.0005;
+  scene.add(lights.bulb);
+
+  lights.lamp = new THREE.PointLight('#ff9d4d', 3, 8, 1.8);
+  lights.lamp.position.set(10.6, 1.95, -12.2);   // 跟随吧台上的台灯
+  scene.add(lights.lamp);
+
+  lights.fill = new THREE.PointLight('#cfe0ff', 1.0, 20, 2);
+  lights.fill.position.set(-6, 3, 8);
+  scene.add(lights.fill);
+}
+setupLighting();
+
+/* ============================================================================
+ * 2b) 房间：地板 + 三面墙（无天花板）
+ * ==========================================================================*/
+const roomWalls = {};   // 后/左/右墙引用，用于防穿模（相机在墙外时隐藏该墙）
+function createRoom() {
+  const R = SCENE_CONFIG.room;
+  const { width: W, depth: D, height: H } = R;
+
+  // 木地板：color 作为贴图的乘法因子，过深会接近全黑，这里用中性暖棕让木纹可见
+  const woodMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, color: '#a8895f', roughness: 0.7, metalness: 0.0 });
+  const wallMat = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, color: R.wallColor, roughness: 0.85, metalness: 0.0 });
+
+  const texLoader = new THREE.TextureLoader(manager);
+  texLoader.load(R.floorTexture, t => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(12, 12);
+    woodMat.map = t; woodMat.needsUpdate = true;
+  });
+  texLoader.load(R.floorBump, t => {
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(12, 12);
+    woodMat.bumpMap = t; woodMat.bumpScale = 0.02; woodMat.needsUpdate = true;
+  });
+
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(W, D), woodMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(W, H), wallMat);
+  back.position.set(0, H / 2, -D / 2);
+  back.receiveShadow = true;
+  scene.add(back);
+  roomWalls.back = back;
+
+  const left = new THREE.Mesh(new THREE.PlaneGeometry(D, H), wallMat);
+  left.rotation.y = Math.PI / 2;
+  left.position.set(-W / 2, H / 2, 0);
+  left.receiveShadow = true;
+  scene.add(left);
+  roomWalls.left = left;
+
+  const right = new THREE.Mesh(new THREE.PlaneGeometry(D, H), wallMat);
+  right.rotation.y = -Math.PI / 2;
+  right.position.set(W / 2, H / 2, 0);
+  right.receiveShadow = true;
+  scene.add(right);
+  roomWalls.right = right;
+}
+
+// 圆形布艺地毯（跟随中心大圆桌，红色调）
+function createRug() {
+  const rugMat = new THREE.MeshStandardMaterial({ color: '#8b3a2a', roughness: 1.0, metalness: 0.0 });
+  const tl = new THREE.TextureLoader(manager);
+  tl.load('./models/textures/rug_diff.jpg', t => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(5, 5);
+    rugMat.map = t; rugMat.needsUpdate = true;
+  });
+  const rug = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), rugMat);
+  rug.rotation.x = -Math.PI / 2;
+  rug.position.set(5.5, 0.02, 0);
+  rug.receiveShadow = true;
+  scene.add(rug);
+}
+
+/* ============================================================================
+ * 3) 模型加载与摆放
+ * ==========================================================================*/
+const SCENE_OBJECTS = new Map();
+const INTERACTIVES = [];
+let failedCount = 0;
+
+function makeLabelSprite(text, color) {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 96;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = 'rgba(28,19,13,0.75)'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.strokeRect(2, 2, cv.width - 4, cv.height - 4);
+  ctx.fillStyle = '#fff6e8'; ctx.font = 'bold 26px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, cv.width / 2, cv.height / 2);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  s.scale.set(1.2, 0.45, 1); s.renderOrder = 999;
+  return s;
+}
+
+function makePlaceholder(cfg) {
+  const g = new THREE.Group();
+  const [w, h, d] = cfg.placeholderSize || [0.5, 0.5, 0.5];
+  const box = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: cfg.color || '#e0a13c', wireframe: true, transparent: true, opacity: 0.65 }));
+  box.name = 'placeholder-box'; g.add(box);
+  if (SCENE_CONFIG.showLabels) { const l = makeLabelSprite(cfg.name, cfg.color || '#e0a13c'); l.position.y = h / 2 + 0.4; g.add(l); }
+  return g;
+}
+
+function registerObject(cfg, wrapper, scale) {
+  wrapper.position.set(...(cfg.position || [0, 0, 0]));
+  wrapper.rotation.set(...(cfg.rotation || [0, 0, 0]));
+  wrapper.scale.set(...(scale || cfg.scale || [1, 1, 1]));
+  scene.add(wrapper);
+  const entry = { wrapper, interactive: cfg.interactive || null, baseScale: wrapper.scale.clone(), meta: cfg };
+  SCENE_OBJECTS.set(cfg.id, entry);
+  if (cfg.interactive) {
+    const meshes = [];
+    wrapper.traverse(o => { if (o.isMesh) meshes.push(o); });
+    INTERACTIVES.push({ ...entry, meshes, hoverFactor: cfg.interactive === 'photo-frame' ? 1.04 : 1.06 });
+  }
+  return entry;
+}
+
+function loadModel(cfg) {
+  const loader = new GLTFLoader(manager);
+  loader.load(cfg.path,
+    (gltf) => {
+      const model = gltf.scene;
+      if (cfg.excludeNodes) {
+        const norm = s => (s || '').replace(/\s+/g, '_');
+        const remove = [];
+        model.traverse(o => { if (cfg.excludeNodes.some(s => norm(o.name).includes(norm(s)))) remove.push(o); });
+        if (remove.length) console.log(`[${cfg.id}] 已剔除 ${remove.length} 个变体节点`);
+        remove.forEach(o => o.parent && o.parent.remove(o));
+      }
+      model.traverse(o => {
+        if (o.isMesh) {
+          o.castShadow = cfg.castShadow !== false;
+          o.receiveShadow = cfg.receiveShadow !== false;
+          if (o.material && (o.material.color.getHex() === 0xffffff) && !o.material.map) o.material.color.set(cfg.color || '#d9c3a3');
+        }
+      });
+      const wrapper = new THREE.Group();
+      // ★ 同路径多实例隔离：深拷贝 scene，防止 Three.js 把已挂载的 scene 从第一实例移走
+      const instance = (cfg.clone !== false) ? model.clone(true) : model;
+      wrapper.add(instance);
+      const box = new THREE.Box3().setFromObject(instance);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      instance.position.x = -center.x;
+      instance.position.z = -center.z;
+      const anchor = cfg.anchor || 'bottom';
+      if (anchor === 'center') instance.position.y = -center.y;
+      else if (anchor === 'top') instance.position.y = -box.max.y;
+      else instance.position.y = -box.min.y;
+      let scale = (cfg.scale || [1, 1, 1]).slice();
+      if (cfg.fitTo) {
+        const ft = cfg.fitTo;
+        let dim = 0, target = 0;
+        if (ft.height != null) { dim = size.y; target = ft.height; }
+        else if (ft.width != null) { dim = size.x; target = ft.width; }
+        else if (ft.size != null) { dim = Math.max(size.x, size.y, size.z); target = ft.size; }
+        if (dim > 0) { const k = target / dim; scale = scale.map(v => v * k); }
+      }
+      registerObject(cfg, wrapper, scale);
+      console.log(`✅ 已加载 [${cfg.id}] ${cfg.path}`);
+    },
+    undefined,
+    () => {
+      failedCount++;
+      console.warn(`⚠️ 模型缺失 [${cfg.id}] ${cfg.path} —— 已用占位框代替`);
+      if (SCENE_CONFIG.showPlaceholders) registerObject(cfg, makePlaceholder(cfg));
+      else SCENE_OBJECTS.set(cfg.id, { wrapper: new THREE.Group(), interactive: null, baseScale: new THREE.Vector3(1, 1, 1), meta: cfg });
+    }
+  );
+}
+
+const manager = new THREE.LoadingManager();
+manager.onProgress = (url, itemsLoaded, itemsTotal) => {
+  document.getElementById('loadBar').style.width = Math.round((itemsLoaded / itemsTotal) * 100) + '%';
+};
+manager.onLoad = () => finishLoading();
+manager.onError = () => {};
+
+function finishLoading() {
+  document.getElementById('loadBar').style.width = '100%';
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+    if (failedCount > 0) showToast(`有 ${failedCount} 个模型未就位，已用线框占位`);
+    else showToast('场景加载完成 ✨');
+  }, 400);
+}
+setTimeout(() => { if (!document.getElementById('loading').classList.contains('hidden')) finishLoading(); }, 12000);
+
+/* ============================================================================
+ * 4) 墙面相框
+ * ==========================================================================*/
+const photoFrameRefs = [];
+function makePhotoPlaceholderTexture(index) {
+  // 咖啡主题海报占位图（简约现代风：深色底 + 浅色文字）
+  const posters = [
+    { bg: '#3a2a1c', fg: '#e8d9b8', t1: 'COFFEE', t2: '手冲咖啡' },
+    { bg: '#2f2f2f', fg: '#e0e0e0', t1: 'ESPRESSO', t2: '意式浓缩' },
+    { bg: '#5a4632', fg: '#f0e4cf', t1: 'LATTE ART', t2: '拉花拿铁' },
+    { bg: '#1f2a30', fg: '#cfd8dc', t1: 'MENU', t2: '今日特供' },
+    { bg: '#4a2f24', fg: '#e9d5bd', t1: 'BAKERY', t2: '现烤面包' },
+    { bg: '#2e3a2a', fg: '#d8e0c8', t1: 'BREAKFAST', t2: '早午餐' },
+  ];
+  const p = posters[index % posters.length];
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 640;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = p.bg; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = p.fg; ctx.lineWidth = 12; ctx.strokeRect(24, 24, cv.width - 48, cv.height - 48);
+  ctx.fillStyle = p.fg; ctx.textAlign = 'center';
+  ctx.font = 'bold 72px Georgia, serif'; ctx.fillText(p.t1, cv.width / 2, cv.height / 2 - 20);
+  ctx.font = '46px Georgia, serif'; ctx.fillText(p.t2, cv.width / 2, cv.height / 2 + 60);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+function createPhotoFrame(cfg) {
+  const [w, h] = cfg.size, border = 0.09, depth = 0.05;
+  const woodMat = new THREE.MeshStandardMaterial({ color: '#5a3d28', roughness: 0.75, metalness: 0.05 });
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(new THREE.BoxGeometry(w + border * 2, h + border * 2, depth), woodMat));
+  const photoMat = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 });
+  const photoPlane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), photoMat);
+  photoPlane.position.z = depth / 2 + 0.004; group.add(photoPlane);
+  const frameMat = new THREE.MeshStandardMaterial({ color: '#4a2f1c', roughness: 0.6, metalness: 0.1 });
+  const t = border;
+  const mk = (sx, sy, px, py) => { const p = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, depth + 0.02), frameMat); p.position.set(px, py, depth / 2 + 0.001); group.add(p); };
+  mk(w + border * 2, t, 0, h / 2 + t / 2); mk(w + border * 2, t, 0, -h / 2 - t / 2);
+  mk(t, h + border * 2, w / 2 + t / 2, 0); mk(t, h + border * 2, -w / 2 - t / 2, 0);
+  group.position.set(...cfg.position); group.rotation.set(...cfg.rotation);
+  group.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  scene.add(group);
+  const ref = { cfg, group, photoPlane, index: 0, currentSrc: '' };
+  photoFrameRefs.push(ref);
+  loadPhoto(ref, cfg.photoUrls[0], 0);
+  registerObject({ id: cfg.id, interactive: 'photo-frame', position: cfg.position, rotation: cfg.rotation, scale: [1, 1, 1] }, group);
+  return ref;
+}
+function loadPhoto(ref, url, index, done) {
+  const texLoader = new THREE.TextureLoader();
+  texLoader.load(url,
+    (tex) => { tex.colorSpace = THREE.SRGBColorSpace; setPhoto(ref, tex, index); ref.currentSrc = url; if (done) done(); },
+    undefined,
+    () => { const c = makePhotoPlaceholderTexture(index); setPhoto(ref, c, index); ref.currentSrc = c.image.toDataURL(); if (done) done(); }
+  );
+}
+function setPhoto(ref, tex, index) { ref.photoPlane.material.map = tex; ref.photoPlane.material.needsUpdate = true; ref.index = index; }
+SCENE_CONFIG.photoFrames.forEach(cfg => createPhotoFrame(cfg));
+
+/* ============================================================================
+ * 4b) 东墙木框窗户（原 frame-8 位置 z=-6；布局参考用户图：木框+玻璃+窗外绿意+厚窗台）
+ * ==========================================================================*/
+function makeOutdoorTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 512;
+  const ctx = cv.getContext('2d');
+  // 天空 → 树篱 竖向渐变
+  const g = ctx.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, '#b9d9e8'); g.addColorStop(0.45, '#cfe3d2');
+  g.addColorStop(0.7, '#8fb27e'); g.addColorStop(1, '#6f9a62');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
+  // 柔和树冠团块
+  const blob = (x, y, r, c) => {
+    const rg = ctx.createRadialGradient(x, y, r * 0.15, x, y, r);
+    rg.addColorStop(0, c); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  };
+  blob(120, 300, 130, 'rgba(84,130,74,0.85)');
+  blob(330, 260, 160, 'rgba(97,143,82,0.8)');
+  blob(450, 330, 120, 'rgba(75,118,66,0.85)');
+  blob(230, 380, 150, 'rgba(66,105,58,0.7)');
+  // 远处一两根树干
+  ctx.strokeStyle = 'rgba(90,70,50,0.55)'; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(300, 300); ctx.lineTo(305, 470); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(140, 320); ctx.lineTo(135, 480); ctx.stroke();
+  // 阳光从左上洒下的亮斑
+  blob(90, 90, 150, 'rgba(255,246,214,0.55)');
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+let windowSashes = null;   // { left, right, open, target } 双扇窗开合状态
+function createWindow() {
+  const W = 1.9, H = 2.0, t = 0.13, d = 0.12;
+  const iw = W - 2 * t, ih = H - 2 * t;   // 窗洞净尺寸
+  const sw = iw / 2;                       // 单扇宽（对开）
+  const group = new THREE.Group();
+  const woodMat = new THREE.MeshStandardMaterial({ color: '#6f4e2f', roughness: 0.72, metalness: 0.04 });
+  const woodDark = new THREE.MeshStandardMaterial({ color: '#5d3f24', roughness: 0.68, metalness: 0.04 });
+  const brass = new THREE.MeshStandardMaterial({ color: '#b98d4b', roughness: 0.35, metalness: 0.7 });
+
+  // ── 固定外框（不随窗扇动）──
+  const mk = (sx, sy, px, py, mat) => {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, d), mat || woodMat);
+    p.position.set(px, py, 0); group.add(p); return p;
+  };
+  mk(W, t, 0, H / 2 - t / 2);            // 上框
+  mk(W, t, 0, -H / 2 + t / 2);           // 下框
+  mk(t, H - 2 * t, -W / 2 + t / 2, 0);   // 左框
+  mk(t, H - 2 * t, W / 2 - t / 2, 0);    // 右框
+  // 窗外景致（固定在窗洞后方，窗扇打开后更亮）
+  const view = new THREE.Mesh(
+    new THREE.PlaneGeometry(iw, ih),
+    new THREE.MeshBasicMaterial({ map: makeOutdoorTexture() })
+  );
+  view.position.z = -0.06; group.add(view);
+  // 厚窗台（探入室内）
+  const sill = new THREE.Mesh(new THREE.BoxGeometry(W + 0.24, 0.09, 0.26), woodDark);
+  sill.position.set(0, -H / 2 - 0.045, 0.07); group.add(sill);
+
+  // ── 单扇窗：dir=+1 向右展开（左扇），dir=-1 向左展开（右扇）──
+  const st = 0.065, sd = 0.055;
+  function makeSash(dir) {
+    const s = new THREE.Group();
+    const box = (sx, sy, px, py, pz, mat) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sd), mat || woodMat);
+      m.position.set(px, py, pz || 0); s.add(m);
+    };
+    // 边框：上下横档满宽，左右竖梃减掉横档厚度
+    box(sw, st, dir * sw / 2, ih / 2 - st / 2, 0);
+    box(sw, st, dir * sw / 2, -ih / 2 + st / 2, 0);
+    box(st, ih - 2 * st, dir * st / 2, 0, 0);
+    box(st, ih - 2 * st, dir * (sw - st / 2), 0, 0);
+    // 单扇十字窗棂
+    box(0.045, ih - 2 * st, dir * sw / 2, 0, 0.012, woodDark);
+    box(sw - 2 * st, 0.045, dir * sw / 2, 0, 0.012, woodDark);
+    // 玻璃
+    const glass = new THREE.Mesh(
+      new THREE.PlaneGeometry(sw - 2 * st, ih - 2 * st),
+      new THREE.MeshStandardMaterial({ color: '#e8f4f8', transparent: true, opacity: 0.2, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide })
+    );
+    glass.position.set(dir * sw / 2, 0, 0.002); s.add(glass);
+    // 窗把手（靠内侧自由边）
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.038, 14, 10), brass);
+    knob.position.set(dir * (sw - 0.085), 0, 0.075); s.add(knob);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.05, 8), brass);
+    stem.rotation.x = Math.PI / 2; stem.position.set(dir * (sw - 0.085), 0, 0.045); s.add(stem);
+    return s;
+  }
+
+  // 铰链枢轴：左扇枢轴在窗洞左内沿，右扇在右内沿；窗扇自由端朝中间合拢
+  const left = new THREE.Group();
+  left.position.set(-iw / 2, 0, 0.01);
+  left.add(makeSash(1));
+  const right = new THREE.Group();
+  right.position.set(iw / 2, 0, 0.01);
+  right.add(makeSash(-1));
+  group.add(left, right);
+  windowSashes = { left, right, open: false, target: 0 };
+
+  group.position.set(15.93, 2.5, 4);       // 中心 y=2.5（窗洞 1.5~3.5），z=4 = 原 frame-7 位置
+  group.rotation.set(0, -Math.PI / 2, 0);  // 朝西对室内
+  group.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  scene.add(group);
+
+  // 注册为可点击交互（点窗扇开/合）
+  const meshes = [];
+  group.traverse(o => { if (o.isMesh) meshes.push(o); });
+  INTERACTIVES.push({ wrapper: group, interactive: 'window', meshes, baseScale: group.scale.clone(), meta: { id: 'window', name: '木窗' }, hoverFactor: 1 });
+}
+createWindow();
+
+/* ==========================================================================
+ * 4c) 窗户装饰：左右对开的蕾丝纱帘（中间留空透光，帘垂到地面）
+ * ==========================================================================*/
+function makeLaceTexture() {
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 256;
+  const ctx = cv.getContext('2d');
+  // 半透明底布
+  ctx.fillStyle = 'rgba(255,252,246,0.62)';
+  ctx.fillRect(0, 0, 256, 256);
+  // 蕾丝花纹：交错圆环网格 + 花心点
+  ctx.lineWidth = 2.6;
+  for (let y = 0; y < 256; y += 32) {
+    for (let x = 0; x < 256; x += 32) {
+      const ox = ((y / 32) % 2 === 0) ? 0 : 16;
+      const cx = (x + ox + 16) % 256, cy = y + 16;
+      ctx.strokeStyle = 'rgba(255,255,255,0.96)';
+      ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+  // 底部扇贝垂边
+  ctx.strokeStyle = 'rgba(255,248,236,0.92)';
+  ctx.lineWidth = 3.2;
+  ctx.beginPath(); ctx.moveTo(0, 250);
+  for (let x = 0; x <= 256; x += 32) ctx.quadraticCurveTo(x + 16, 264, x + 32, 250);
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1.6, 7);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function createCurtains() {
+  const W = 1.9;
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({
+    map: makeLaceTexture(), transparent: true, opacity: 0.96, side: THREE.DoubleSide,
+    roughness: 0.95, metalness: 0, depthWrite: false
+  });
+  const topY = 1.22;          // 帘顶（窗框上沿之上）
+  const botY = -2.4;          // 垂到地面（世界 y≈0.1）
+  const pw = 0.52, ph = topY - botY;
+  for (const sx of [-1, 1]) {
+    const geo = new THREE.PlaneGeometry(pw, ph, 10, 32);
+    // 布褶：横向正弦起伏 + 竖向轻微飘动
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const u = (pos.getX(i) / pw) + 0.5;
+      const v = (pos.getY(i) / ph) + 0.5;
+      pos.setZ(i, Math.sin(u * Math.PI * 3) * 0.055 + Math.sin(v * 2.6 + u * 2) * 0.02);
+    }
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(sx * (W / 2 + 0.06), (topY + botY) / 2, 0.10);
+    m.castShadow = false; m.receiveShadow = true;
+    g.add(m);
+  }
+  // 黄铜帘杆
+  const rod = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.022, 0.022, W + 1.0, 12),
+    new THREE.MeshStandardMaterial({ color: '#b98d4b', roughness: 0.4, metalness: 0.65 })
+  );
+  rod.rotation.z = Math.PI / 2;
+  rod.position.set(0, topY + 0.03, 0.10);
+  g.add(rod);
+
+  g.position.set(15.93, 2.5, 4);
+  g.rotation.set(0, -Math.PI / 2, 0);   // 同窗户：朝西对室内
+  scene.add(g);
+}
+createCurtains();
+
+const WINDOW_OPEN_ANGLE = 1.72;   // ≈98°，向内开
+function toggleWindow() {
+  if (!windowSashes) return;
+  windowSashes.open = !windowSashes.open;
+  windowSashes.target = windowSashes.open ? 1 : 0;
+  showToast(windowSashes.open ? '吱呀——窗户打开了，风灌进来了' : '窗户关上了');
+}
+
+// —— 窗户两侧：P3 照片大木勺/大木叉（近白背景运行时沿边缘泛洪抠除，与窗户同高平行挂墙）——
+function keyOutWhite(img) {
+  const cv = document.createElement('canvas');
+  cv.width = img.width; cv.height = img.height;
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const id = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = id.data, W = cv.width, H = cv.height;
+  const seen = new Uint8Array(W * H);
+  // 两档容差：严格档抠纯白底，宽松档吞掉木边软阴影（灰米色）
+  const isBg = (i, loose) => {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    return loose ? (mx > 165 && mx - mn < 58) : (mx > 200 && mx - mn < 44);
+  };
+  const q = [];
+  for (let x = 0; x < W; x++) { q.push(x, (H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { q.push(y * W, y * W + W - 1); }
+  while (q.length) {
+    const p = q.pop();
+    if (seen[p]) continue;
+    const i = p * 4;
+    const loose = seen[p] === 2;          // 从已抠像素扩展来的用宽松档
+    if (!isBg(i, loose)) { seen[p] = 1; continue; }
+    seen[p] = 2;
+    d[i + 3] = 0;
+    const x = p % W, y = (p / W) | 0;
+    if (x > 0 && !seen[p - 1]) q.push(p - 1); if (x < W - 1 && !seen[p + 1]) q.push(p + 1);
+    if (y > 0 && !seen[p - W]) q.push(p - W); if (y < H - 1 && !seen[p + W]) q.push(p + W);
+  }
+  // 去噪：被抠空包围的孤立残留点一并抠掉
+  for (let p = W + 1; p < W * (H - 1) - 1; p++) {
+    if (seen[p] || d[p * 4 + 3] === 0) continue;
+    if (seen[p - 1] === 2 && seen[p + 1] === 2 && seen[p - W] === 2 && seen[p + W] === 2) d[p * 4 + 3] = 0;
+  }
+  ctx.putImageData(id, 0, 0);
+  return cv;
+}
+function hangUtensil(url, z) {
+  const img = new Image();
+  img.onload = () => {
+    const cv = keyOutWhite(img);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const h = 1.7, w = h * cv.width / cv.height;
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.35, roughness: 0.85, metalness: 0, side: THREE.DoubleSide })
+    );
+    m.position.set(15.93, 2.5, z);           // 与窗户同中心高，平行挂墙
+    m.rotation.y = -Math.PI / 2;             // 朝西对室内
+    m.castShadow = m.receiveShadow = true;
+    scene.add(m);
+  };
+  img.onerror = () => console.warn('挂饰图片缺失：' + url);
+  img.src = url;
+}
+hangUtensil('./images/wall_fork.png', 2.3);    // 窗户北侧（左），P3 图顺序：叉左勺右
+hangUtensil('./images/wall_spoon.png', 5.7);   // 窗户南侧（右）
+
+/* ============================================================================
+ * 5) UI 菜单（含【生日蛋糕】隐藏选项）
+ * ==========================================================================*/
+const MENU = {
+  coffee: [
+    { name: '手冲咖啡', desc: '单品豆 · 果香明亮', price: '¥38' },
+    { name: '拿铁', desc: '丝滑奶泡 · 坚果尾韵', price: '¥32' },
+    { name: '焦糖玛奇朵', desc: '焦糖香 · 微甜', price: '¥36' },
+  ],
+  dessert: [
+    { name: '生日蛋糕', desc: '今日特别推荐', price: '惊喜', birthday: true },
+    { name: '焦糖布丁', desc: '入口即化', price: '¥22' },
+    { name: '水果挞', desc: '当季水果', price: '¥26' },
+  ],
+};
+const BUBBLE = {
+  avatar: '🐰',
+  lines: ['点单成功！马上为您准备~', '好嘞，请稍等片刻~', '收到！这就给您做！✨', '客官请稍候，香香的马上来~'],
+};
+
+function buildMenu() {
+  const mk = (container, items, category) => {
+    container.innerHTML = '';
+    items.forEach(it => {
+      const el = document.createElement('div');
+      el.className = 'item' + (it.birthday ? ' birthday' : '');
+      el.innerHTML = `<div class="nm">${it.name}<small>${it.desc}</small></div><div class="pr">${it.price}</div>`;
+      el.addEventListener('click', () => { if (it.birthday) triggerBirthday(); else onOrder(it.name, category); });
+      container.appendChild(el);
+    });
+  };
+  mk(document.getElementById('menuCoffee'), MENU.coffee, 'coffee');
+  mk(document.getElementById('menuDessert'), MENU.dessert, 'dessert');
+}
+buildMenu();
+
+const menuEl = document.getElementById('menu');
+function openMenu() { menuEl.classList.add('show'); }
+function closeMenu() { menuEl.classList.remove('show'); }
+document.getElementById('menuClose').addEventListener('click', closeMenu);
+menuEl.addEventListener('click', e => { if (e.target === menuEl) closeMenu(); });
+
+function onOrder(name, category) {
+  closeMenu();
+  const line = BUBBLE.lines[Math.floor(Math.random() * BUBBLE.lines.length)];
+  const avatar = category === 'coffee' ? '☕' : '🍮';
+  showBubble(`「${name}」${line}`, avatar);
+}
+
+/* ============================================================================
+ * 6) 气泡 / Toast / 信件
+ * ==========================================================================*/
+const bubbleEl = document.getElementById('bubble');
+const toastEl = document.getElementById('toast');
+let bubbleTimer = null;
+
+function showBubble(text, avatar) {
+  const a = avatar || BUBBLE.avatar;
+  const avEl = bubbleEl.querySelector('.avatar');
+  if (/^(https?:)?\/\//.test(a) || /\.(png|jpe?g|gif|webp|svg)$/i.test(a)) { avEl.style.backgroundImage = `url(${a})`; avEl.textContent = ''; }
+  else { avEl.style.backgroundImage = 'none'; avEl.textContent = a; }
+  bubbleEl.querySelector('.text').textContent = text;
+  bubbleEl.classList.remove('show'); void bubbleEl.offsetWidth; bubbleEl.classList.add('show');
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => bubbleEl.classList.remove('show'), 2800);
+}
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 3200);
+}
+
+// ★★★ 信件内容：改这里即可自定义 ★★★
+const LETTER_TEXT = `TO小音
+
+      又一年 我们人在彼此的身边 。祝你顺遂无虞 所得皆愿
+
+˗ˋˏ 𝟸𝟷ˎˊ˗
+           · ╽ ·
+    ╭♡⍨⍣⍨♡╮
+    ⤷ 〰️〰️〰️⤴
+╰⪩•⪨〰️〰️⪩•⪨ ╯
+
+                                    ——你的好朋友及无条件支持者王老吉`;
+
+const letterEl = document.getElementById('letter');
+const letterEnv = document.getElementById('letterEnv');
+const letterContent = document.getElementById('letterContent');
+function openLetter() { letterContent.textContent = LETTER_TEXT; letterEl.classList.remove('opened'); letterEnv.classList.remove('open'); letterEl.classList.add('show'); }
+function closeLetter() {
+  letterEl.classList.remove('show', 'opened');
+  letterEnv.classList.remove('open');
+  if (birthdayStage === 1) showCake();   // 读完信并关闭后，蛋糕才出现
+}
+document.getElementById('letterClose').addEventListener('click', closeLetter);
+// 阻止冒泡到 window 的 pointerup 场景点击判定（会误触地面飞行/退出生日模式）
+const letterCloseBtn = document.getElementById('letterClose');
+letterCloseBtn.addEventListener('pointerdown', e => e.stopPropagation());
+letterCloseBtn.addEventListener('pointerup', e => e.stopPropagation());
+document.getElementById('letterEnv').addEventListener('click', () => {
+  if (!letterEnv.classList.contains('open')) { letterEnv.classList.add('open'); setTimeout(() => letterEl.classList.add('opened'), 60); }   // 拆封后信封淡出，信纸淡入
+});
+
+/* ============================================================================
+ * 7) 背景音乐
+ *    咖啡屋背景乐 = opening.mp3（开业曲，HTMLAudio，点封印时起播并贯穿全场）
+ *    生日音乐   = happy-birthday.mp3（THREE.Audio，点蛋糕时才首次加载）
+ * ==========================================================================*/
+const listener = new THREE.AudioListener();
+camera.add(listener);   // ★ 音频监听器绑定到相机上
+
+const audioLoader = new THREE.AudioLoader();
+const bgmOpening = document.getElementById('bgmOpening');   // 开业曲 = 咖啡屋常驻背景乐
+
+const bgm2 = new THREE.Audio(listener);   // bgm2：生日音乐
+bgm2.setLoop(true);      // 循环播放
+bgm2.setVolume(0.7);
+// 注意：bgm2 的音频缓冲在点击蛋糕时才加载（见 switchToBirthday），不预先下载
+
+let musicStarted = false;
+
+// AudioContext 在模块加载时创建（无用户手势）必然是 suspended，手势内先 resume 再播放
+function playWhenReady(a) {
+  const ctx = listener.context;
+  const doPlay = () => { if (!a.isPlaying) a.play(); };
+  if (ctx.state === 'running') { doPlay(); return; }
+  ctx.resume().then(doPlay).catch(doPlay);
+}
+
+// 咖啡屋背景乐：开业曲 opening.mp3（拆信时已起播，此处仅做恢复）
+function playCafeMusic() {
+  bgmOpening.play().catch(() => {});
+}
+function pauseCafeMusic() {
+  bgmOpening.pause();
+}
+
+// 触发条件 A：用户点「进入咖啡屋」→ 开业曲继续作为背景乐
+function startMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+  playCafeMusic();
+}
+
+// 点击场景里的唱片机：手动开 / 关开业曲（也是自动播放失败时的兜底入口）
+function toggleRecordPlayer() {
+  if (birthdayMode) { showBubble('正在播生日歌呢，等吹完蜡烛哦～', '🎵'); return; }
+  musicStarted = true;
+  if (bgmOpening.paused) {
+    bgmOpening.volume = 0.5;
+    if (bgmOpening.error) bgmOpening.load();   // 之前加载失败过（如服务中断）：先重置错误状态再重试
+    const okPlay = () => showBubble('♪ 唱片机响起了开业曲', '🎵');
+    const failPlay = (e) => showToast(e && e.name === 'NotAllowedError'
+      ? '浏览器拦截了播放：先点一下页面任意处，再点唱片机'
+      : 'opening.mp3 播放失败[' + (e && e.name || '?') + ']：请从 http://localhost:8124 打开并硬刷新');
+    bgmOpening.play().then(okPlay).catch(e1 => {
+      if (e1 && e1.name === 'NotAllowedError') { failPlay(e1); return; }   // 手势问题，重试无意义
+      bgmOpening.load();
+      bgmOpening.play().then(okPlay).catch(failPlay);
+    });
+  } else {
+    bgmOpening.pause();
+    showBubble('唱片机暂停了', '🎵');
+  }
+}
+
+// 音乐状态机：birthdayMode 标记当前是否处于生日模式，
+// 防止生日歌异步加载期间用户已返回、回调却强行播歌的竞态
+let birthdayMode = false;
+
+// 触发条件 B：点击【生日蛋糕】→ 暂停开业曲，循环播放生日歌（从头播）
+function switchToBirthday() {
+  birthdayMode = true;
+  pauseCafeMusic();
+  if (bgm2.buffer) {
+    if (bgm2.isPlaying) bgm2.stop();   // stop 后下次 play 从头开始
+    playWhenReady(bgm2);
+  } else {
+    audioLoader.load('./audio/happy-birthday.mp3',
+      buffer => {
+        bgm2.setBuffer(buffer);
+        // 加载期间用户可能已经返回咖啡屋：此时丢弃，不得强插生日歌
+        if (birthdayMode) playWhenReady(bgm2);
+      },
+      undefined,
+      () => {
+        // 生日歌加载失败：恢复开业曲，避免无声卡死
+        if (birthdayMode) {
+          birthdayMode = false;
+          playCafeMusic();
+          showToast('生日音乐未就位（./audio/happy-birthday.mp3）');
+        }
+      }
+    );
+  }
+}
+
+// 返回咖啡屋：无论生日歌是否还在加载，都标记退出并恢复开业曲
+function exitBirthdayMusic() {
+  birthdayMode = false;
+  if (bgm2.isPlaying) bgm2.stop();
+  playCafeMusic();
+}
+
+// ★ 全局停音乐：关闭标签页 / 切后台 / 被其他实例抢占时
+function stopAllMusic() {
+  try {
+    if (bgmOpening && !bgmOpening.paused) bgmOpening.pause();
+    if (bgm2.isPlaying) bgm2.stop();
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') stopAllMusic();
+});
+window.addEventListener('beforeunload', stopAllMusic);
+window.addEventListener('pagehide', stopAllMusic);
+
+// ★ 跨标签页同步：新页面一打开，强制所有同域旧页面停音乐（避免多页交叠）
+(function crossTabMute() {
+  // 1) BroadcastChannel（同协议+同host+同port，所有标签页共享）
+  try {
+    const ch = new BroadcastChannel('cafe-music');
+    // 收到任何消息都立即停自己的音乐
+    ch.onmessage = () => stopAllMusic();
+    // 告诉大家"我新来的，先停一下"
+    ch.postMessage('hello');
+    window.addEventListener('pagehide', () => { try { ch.postMessage('bye'); } catch (e) {} });
+  } catch (e) { /* BroadcastChannel 不可用，降级到 storage */ }
+
+  // 2) localStorage storage 事件兜底（跨标签页写同 key 时其他页会触发）
+  try {
+    const storageKeyMute = 'cafe-mute-signal';
+    window.addEventListener('storage', (ev) => {
+      if (ev.key === storageKeyMute) stopAllMusic();
+    });
+    // 自己也写一次信号，触发其他标签页的 storage 事件
+    try { localStorage.setItem(storageKeyMute, String(Date.now())); } catch (e) {}
+  } catch (e) {}
+
+  // 3) 页面刚加载时，任何之前残留的 THREE.Audio 或 <audio> 都强制停
+  stopAllMusic();
+  try {
+    document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+  } catch (e) {}
+})();
+
+const startEl = document.getElementById('start');
+startEl.addEventListener('click', () => {
+  startEl.classList.add('hidden');
+  startMusic();
+});
+
+/* ============================================================================
+ * 7.5) 开业信封页：点兔子吐司开封（信封向上翻开、信纸抽出、开业曲起）→ 进入咖啡屋
+ * ==========================================================================*/
+const envelopePage = document.getElementById('envelopePage');
+const envEl = document.getElementById('theEnvelope');
+const envOpenBtn = document.getElementById('envOpenBtn');
+let envelopeOpened = false;
+
+function openEnvelope() {
+  if (envelopeOpened) return;
+  envelopeOpened = true;
+  envEl.classList.add('open');
+  envelopePage.classList.add('opened');
+  // 播放开业曲（用户点击触发，符合浏览器自动播放策略），它同时也是咖啡屋常驻背景乐
+  bgmOpening.volume = 0.5;
+  bgmOpening.play().catch(() => showToast('提示：请在 ./audio/ 放入 opening.mp3'));
+}
+envOpenBtn.addEventListener('click', openEnvelope);   // 兔子吐司 = 开封按钮
+envEl.addEventListener('click', openEnvelope);        // 点信封本体也可开封（兜底）
+// 音频解码/加载失败时给出可见提示，避免"无声无反馈"
+bgmOpening.addEventListener('error', () => {
+  if (bgmOpening.error) showToast('开业曲加载失败（opening.mp3），点吧台区唱片机重试');
+});
+
+// 切出页面/退出时暂停音乐，回来时只恢复原本在播的那一路
+let bgmWasPlaying = false, bgm2WasPlaying = false;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    bgmWasPlaying = !bgmOpening.paused;
+    bgm2WasPlaying = bgm2.isPlaying;
+    if (bgmWasPlaying) bgmOpening.pause();
+    if (bgm2WasPlaying) bgm2.pause();
+  } else {
+    if (bgmWasPlaying) bgmOpening.play().catch(() => {});
+    if (bgm2WasPlaying) bgm2.play();
+    bgmWasPlaying = bgm2WasPlaying = false;
+  }
+});
+
+document.getElementById('envEnter').addEventListener('click', () => {
+  envelopePage.classList.add('hidden');
+  startEl.classList.add('hidden');   // 跳过原进入画面，直接进场景
+  startMusic();                      // 开业曲继续不中断
+});
+
+/* ============================================================================
+ * 8) 生日蛋糕隐藏剧情
+ * ==========================================================================*/
+const CAKE_MODEL_PATH = './models/birthday_cake.glb?v=20261029';   // ★★★ 强制只加载真实 GLB（每次改版本号防缓存）
+
+let birthdayStage = 0;   // 0=未开始, 1=信封已出现, 2=蛋糕已出现
+let _cakePreloaded = null;   // 预加载的蛋糕 GLB scene
+window.__showCake = () => { birthdayStage = 1; closeLetter(); showCake(); };   // 调试直达
+
+// ★ 提前预加载蛋糕模型（页面加载完成即开始，关信时基本 ready）
+(function preloadCake() {
+  console.log('[cake] preload start');
+  new GLTFLoader().load(CAKE_MODEL_PATH,
+    (gltf) => { _cakePreloaded = gltf.scene; console.log('[cake] preload DONE'); },
+    (ev) => { if (ev.total) console.log('[cake] preload progress', Math.round(ev.loaded/ev.total*100)+'%'); },
+    (err) => { console.error('[cake] preload FAIL', err); }
+  );
+})();
+let birthdayGroup = null;
+let candleLight = null;
+let cakeMesh = null;
+
+function createEnvelope() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.18), new THREE.MeshStandardMaterial({ color: '#f7ecd8', roughness: 0.8, side: THREE.DoubleSide }));
+  body.rotation.x = -Math.PI / 2;
+  const seal = new THREE.Mesh(new THREE.CircleGeometry(0.035, 20), new THREE.MeshStandardMaterial({ color: '#c0392b', roughness: 0.4, side: THREE.DoubleSide }));
+  seal.rotation.x = -Math.PI / 2;
+  seal.position.y = 0.004;
+  g.add(body, seal);
+  return g;
+}
+
+function dimLights() {
+  // 生日模式：全灯调暗至 15%（非全灭），保留微弱氛围
+  lights.ambient.intensity = 0.12 * 0.15;
+  lights.spot.intensity = 28 * 0.15;
+  lights.bulb.intensity = 6 * 0.15;
+  lights.lamp.intensity = 3 * 0.15;
+  lights.fill.intensity = 1.0 * 0.15;
+  scene.environmentIntensity = 0.25 * 0.15;
+}
+
+// 返回咖啡屋：恢复全部灯光初始亮度（与 setupLighting 中一致）
+function restoreLights() {
+  lights.ambient.intensity = 0.12;
+  lights.spot.intensity = 28;
+  lights.bulb.intensity = 6;
+  lights.lamp.intensity = 3;
+  lights.fill.intensity = 1.0;
+  scene.environmentIntensity = 0.25;
+}
+
+// 第一步：点击【生日蛋糕】
+function triggerBirthday() {
+  closeMenu();
+  if (birthdayStage === 1) return;          // 信件还开着，忽略重复点击
+  if (birthdayStage === 3) { reenterCakeView(); return; }   // 看过一遍 → 直接重回蛋糕特写
+  birthdayStage = 1;
+  switchToBirthday();   // ★ 点击【生日蛋糕】菜单的瞬间，背景音乐切到生日歌
+  openLetter();         // ★ 弹出信，读完关闭后蛋糕自动出现（showCake 由 closeLetter 触发）
+}
+
+// 返回咖啡屋后再次点蛋糕：蛋糕还在吧台上，重新点烛光、切音乐、拉特写
+function reenterCakeView() {
+  birthdayStage = 2;
+  candleBlown = false;
+  clearTimeout(blowTimer);
+  exitBirthdayBtn.classList.remove('show');
+  dimLights();
+  if (!candleLight) {
+    candleLight = new THREE.PointLight('#ffe0b0', 1.1, 2.6, 2);
+    candleLight.position.set(11.22, 1.62, -8.8);   // ★ 蛋糕西侧（-X）照亮朝向客人的相框
+    scene.add(candleLight);
+  }
+  candleLight.intensity = 1.1;
+  switchToBirthday();
+  flyToCake();
+  showBubble('🎂 生日快乐！点一下蛋糕吹蜡烛～', '🎂');
+}
+
+// 第二步：读完信并关闭信件后，蛋糕才出现
+function showCake() {
+  if (birthdayStage !== 1) return;
+  birthdayStage = 2;
+  console.log('[cake] showCake called, _cakePreloaded=', !!_cakePreloaded);
+  // ★ 强制只加载真实白色长方形蛋糕 GLB，不再用任何程序化 fallback
+  if (_cakePreloaded) {
+    console.log('[cake] using preloaded');
+    placeCake(placeCakeModel(_cakePreloaded));
+  } else {
+    console.log('[cake] loading fresh GLB...');
+    new GLTFLoader().load(CAKE_MODEL_PATH,
+      (gltf) => {
+        console.log('[cake] GLB loaded! scene children=', gltf.scene.children.length);
+        placeCake(placeCakeModel(gltf.scene));
+      },
+      (ev) => { console.log('[cake] GLB progress', ev.loaded, ev.total); },
+      (err) => { console.error('蛋糕 GLB 加载失败！', err); showBubble('蛋糕加载失败，请刷新页面'); }
+    );
+  }
+}
+
+function placeCakeModel(model) {
+  // ★ 统一计算函数：用 geometry.boundingBox + matrixWorld，避免未更新的 matrixWorld 干扰
+  const getMeshBoxAndSize = (o) => {
+    if (!o.isMesh || !o.geometry) return null;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const bb = o.geometry.boundingBox.clone();
+    o.updateMatrixWorld(true);
+    bb.applyMatrix4(o.matrixWorld);
+    const s = new THREE.Vector3(); bb.getSize(s);
+    return { bb, s, maxD: Math.max(s.x, s.y, s.z), zeroZ: s.z < 0.005, mat: o.material };
+  };
+
+  // ★ 过滤巨型 text plane（mesh_5，CanvasTexture + PlaneGeometry）
+  // geometry.boundingBox 只有 ~1m（PlaneGeometry 原始尺寸），不是 23.8m！
+  // 改看 metalness：mesh_5 metal=0.85（唯一高 metal 的 mesh）
+  const giantMeshes = [];
+  const cakeMeshes = [];
+  model.traverse(o => {
+    const info = getMeshBoxAndSize(o);
+    if (!info) return;
+    const mat = info.mat;
+    const metal = mat ? (mat.metalness ?? 0) : 0;
+    // 巨型 text plane 特征：高 metal + 有贴图 + 尺寸大于 0.5m
+    if (metal > 0.5 && mat && mat.map) { giantMeshes.push(o); console.log('[cake] giant mesh filtered out (text plane, metal=', metal, ')'); }
+    else cakeMeshes.push(o);
+  });
+  console.log('[cake] giantMeshes=', giantMeshes.length, 'cakeMeshes=', cakeMeshes.length);
+
+  // 用正常 mesh 计算归一化 box
+  const box = new THREE.Box3();
+  cakeMeshes.forEach(m => { const info = getMeshBoxAndSize(m); if (info) box.expandByObject(m); });
+
+  const c = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  console.log('[cake] cake box size=', size.toArray().map(v=>+v.toFixed(4)));
+  model.position.x -= c.x;
+  model.position.z -= c.z;
+  model.position.y -= box.min.y;
+
+  // 找蛋糕本体 mesh（x>z 的长方形、y 在 0.1-0.5m 范围）
+  const cakeBodyBox = new THREE.Box3();
+  cakeMeshes.forEach(m => {
+    const info = getMeshBoxAndSize(m);
+    if (!info) return;
+    if (info.s.y > 0.1 && info.s.y < 0.5 && info.s.x > info.s.z) cakeBodyBox.expandByObject(m);
+  });
+  const cakeBodySize = new THREE.Vector3(); cakeBodyBox.getSize(cakeBodySize);
+  const refH = cakeBodySize.y || size.y;
+  const k = 0.24 / refH;   // 0.24m 高（原 0.27 偏大，容易与吧台/周边穿模）
+  console.log('[cake] refH=', refH.toFixed(4), 'k=', k.toFixed(4));
+
+  // ★★★ Z-fighting 修复：把相框/珠子/蜡烛往相机方向（本地 -Z）外推少量
+  // 必须在 scale + rotation 之前做（用原始 GLB 尺寸判断）
+  model.traverse(o => {
+    const info = getMeshBoxAndSize(o);
+    if (!info) return;
+    const { maxD, zeroZ, mat } = info;
+    const hasMap = mat && !!mat.map;
+    const isMetal = mat && (mat.metalness ?? 0) > 0.3;
+    const hasEmissive = mat && mat.emissive && mat.emissive.getHex() !== 0;
+
+    const isFrame = zeroZ && maxD <= 0.4 && (
+      (!hasMap && maxD >= 0.05) ||      // 相框底座
+      (hasMap && maxD >= 0.12)          // 相框外环+照片
+    );
+    const isCandle = zeroZ && hasMap && maxD >= 0.03 && maxD < 0.12 && !hasEmissive;  // 爱心蜡烛
+    const isBead = !zeroZ && maxD >= 0.006 && maxD <= 0.025 && !isMetal && !hasEmissive;
+
+    if (isFrame) o.position.z -= 0.004;
+    else if (isCandle) o.position.z -= 0.003;
+    else if (isBead) o.position.z -= 0.0015;
+  });
+
+  model.scale.setScalar(k);
+  model.rotation.y = -Math.PI / 2;   // ★ 相框面朝西（-X 方向，面向客人）
+  // 移除模型内导出的点光源：场景有自己的烛光逻辑（吹灭/重燃），避免双重光照
+  const lights = [];
+  model.traverse(o => { if (o.isLight) lights.push(o); });
+  lights.forEach(l => l.parent && l.parent.remove(l));
+  model.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.receiveShadow = true;
+    const m = o.material;
+    if (!m) return;
+    // 主场景无环境贴图，高金属度会渲染成黑色 → 降金属度，银件/米白珠提亮
+    if (m.metalness !== undefined && m.metalness > 0.3) { m.metalness = 0.22; m.roughness = Math.max(m.roughness ?? 0.5, 0.38); }
+    // 火焰/烛芯等自发光增强，暗场下可见
+    if (m.emissive && m.emissive.getHex() !== 0) m.emissiveIntensity = Math.max(m.emissiveIntensity ?? 1, 2);
+    // 顶部刻字（透明+贴图的唯一标准材质）：加自发光贴图，暗场下黑字仍可辨
+    if (m.transparent && m.map) { m.emissiveMap = m.map; m.emissive = new THREE.Color('#ffffff'); m.emissiveIntensity = 0.28; }
+  });
+  return model;
+}
+
+function placeCake(cake) {
+  cakeMesh = cake;
+  console.log('[cake] placeCake called, cake=', !!cake, 'scale=', cake.scale?.toArray?.());
+  cake.position.set(11.5, 1.265, -8.8);   // 再下沉 1.5cm 让自带白托盘轻微嵌入台面，视觉完全贴死无悬浮阴影
+  // ★ 修复：不再缩到 0.01（placeCakeModel 已归一化到 0.3m 高）
+  // 通过 birthdayGroup 从 0 放大到 1 实现"出现"动画
+  if (!birthdayGroup) {
+    birthdayGroup = new THREE.Group();
+    birthdayGroup.scale.setScalar(0);
+    scene.add(birthdayGroup);
+  }
+  // 用独立 pivot 承载蛋糕：出现动画作用于 birthdayGroup/cakeMesh，
+  // hover 放大作用于 pivot，三者互不干扰
+  const cakePivot = new THREE.Group();
+  birthdayGroup.add(cakePivot);
+  cakePivot.add(cake);
+  const cakeMeshes = [];
+  cakePivot.traverse(o => { if (o.isMesh) cakeMeshes.push(o); });
+  INTERACTIVES.push({ wrapper: cakePivot, interactive: 'birthday-cake', meshes: cakeMeshes, baseScale: cakePivot.scale.clone(), meta: { name: '生日蛋糕' }, hoverFactor: 1.0 });
+
+  // 灯光剧变：全灭 + 蛋糕上方暖黄点光（0xffaa00，模拟蜡烛）
+  dimLights();
+  candleLight = new THREE.PointLight('#ffe0b0', 1.1, 2.6, 2);
+  candleLight.position.set(11.22, 1.62, -8.8);   // ★ 蛋糕西侧（-X）照亮朝向客人的相框
+  scene.add(candleLight);
+
+  // 音乐已在点击【生日蛋糕】时切换（triggerBirthday），这里只做相机拉近特写
+  flyToCake();
+  showBubble('🎂 生日快乐！点一下蛋糕吹蜡烛～', '🎂');
+}
+
+let candleBlown = false;
+let blowTimer = null;
+const exitBirthdayBtn = document.getElementById('exitBirthday');
+
+// 第三步：点击蛋糕 → 吹灭蜡烛，显示「返回咖啡屋」按钮
+function blowCandles() {
+  if (candleBlown) return;
+  candleBlown = true;
+  if (candleLight) candleLight.intensity = 0;   // 烛光熄灭
+  showBubble('呼—— 许个愿吧 ✨', '🎂');
+  blowTimer = setTimeout(() => exitBirthdayBtn.classList.add('show'), 900);
+}
+
+// 第四步：返回咖啡屋 → 灯光恢复、音乐切回、相机全景、按钮隐藏
+function exitBirthday() {
+  if (birthdayStage !== 2) return;
+  birthdayStage = 3;
+  candleBlown = false;
+  clearTimeout(blowTimer);                    // 撤销尚未弹出的按钮
+  restoreLights();
+  if (candleLight) { scene.remove(candleLight); candleLight = null; }
+  exitBirthdayMusic();                        // ★ 统一音乐出口：停生日歌、恢复开业曲
+  exitBirthdayBtn.classList.remove('show');
+  resetView();
+  showToast('欢迎回到 Café · Musique ☕');
+}
+exitBirthdayBtn.addEventListener('click', exitBirthday);
+// 阻止按钮事件冒泡到 window 的 pointerup 判定，避免误触地面点击逻辑
+exitBirthdayBtn.addEventListener('pointerdown', e => e.stopPropagation());
+exitBirthdayBtn.addEventListener('pointerup', e => e.stopPropagation());
+
+function registerEnvelope(envelope) {
+  const meshes = [];
+  envelope.traverse(o => { if (o.isMesh) meshes.push(o); });
+  INTERACTIVES.push({ wrapper: envelope, interactive: 'envelope', meshes, baseScale: envelope.scale.clone(), meta: { id: 'envelope', name: '信封' }, hoverFactor: 1.08 });
+}
+
+/* ============================================================================
+ * 9) 照片灯箱
+ * ==========================================================================*/
+const lightboxEl = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxCaption = document.getElementById('lightboxCaption');
+const lightboxCounter = document.getElementById('lightboxCounter');
+let activeFrame = null;
+function openLightbox(ref) { activeFrame = ref; updateLightbox(); lightboxEl.classList.add('show'); }
+function closeLightbox() { lightboxEl.classList.remove('show'); activeFrame = null; }
+function updateLightbox() {
+  if (!activeFrame) return;
+  lightboxImg.src = activeFrame.currentSrc;
+  lightboxCaption.textContent = `${activeFrame.cfg.id} · 照片 ${activeFrame.index + 1}`;
+  lightboxCounter.textContent = `${activeFrame.index + 1} / ${activeFrame.cfg.photoUrls.length}`;
+}
+function navLightbox(dir) {
+  if (!activeFrame) return;
+  const urls = activeFrame.cfg.photoUrls;
+  const next = (activeFrame.index + dir + urls.length) % urls.length;
+  loadPhoto(activeFrame, urls[next], next, updateLightbox);
+}
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+document.getElementById('lbPrev').addEventListener('click', () => navLightbox(-1));
+document.getElementById('lbNext').addEventListener('click', () => navLightbox(1));
+lightboxEl.addEventListener('click', e => { if (e.target === lightboxEl) closeLightbox(); });
+/* 长桌上的翻页书：点击桌上的书 → 弹出阅读层（iframe 内是完整翻页书，可翻页） */
+const bookViewEl = document.getElementById('bookView');
+const bookFrame = document.getElementById('bookFrame');
+function openBookView() {
+  if (!bookFrame.getAttribute('src')) bookFrame.src = './birthday-book.html?v=1029b';
+  bookViewEl.classList.add('show');
+}
+function closeBookView() { bookViewEl.classList.remove('show'); }
+document.getElementById('bookViewClose').addEventListener('click', closeBookView);
+// 阻止冒泡到 window 的 pointerup 场景点击判定
+document.getElementById('bookViewClose').addEventListener('pointerup', e => e.stopPropagation());
+bookViewEl.addEventListener('click', e => { if (e.target === bookViewEl) closeBookView(); });
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeLightbox(); closeLetter(); closeBookView(); }
+  else if (activeFrame && e.key === 'ArrowLeft') navLightbox(-1);
+  else if (activeFrame && e.key === 'ArrowRight') navLightbox(1);
+});
+
+/* ============================================================================
+ * 10) Raycaster 交互 + 相机飞行
+ * ==========================================================================*/
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let hovered = null;
+let downX = 0, downY = 0, downBtn = -1;
+
+function setPointer(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+}
+function pick() {
+  raycaster.setFromCamera(pointer, camera);
+  let hit = null;
+  for (const it of INTERACTIVES) {
+    if (it.meshes.length === 0) continue;
+    if (raycaster.intersectObjects(it.meshes, false).length > 0) { hit = it; break; }
+  }
+  return hit;
+}
+function applyHover(next) { if (hovered === next) return; hovered = next; canvas.classList.toggle('hoverable', !!next); }
+
+// ★ 点击任意位置放大：射线与地面(y=0)求交，相机飞向该点拉近
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+function flyToGroundPoint(point) {
+  const x = THREE.MathUtils.clamp(point.x, -14, 14);
+  const z = THREE.MathUtils.clamp(point.z, -12, 12);
+  // 相机斜向 45° 俯视目标点，拉近放大
+  flyToCamera([x + 3.5, 3.2, z + 3.5], [x, 0.9, z], 0.85, null, 2.6);
+}
+function resetView() {
+  const v = SCENE_CONFIG.camera;
+  flyToCamera(v.position, v.target, 0.85, null, 1);   // 正交相机默认 zoom=1
+}
+
+canvas.addEventListener('pointermove', (e) => { setPointer(e); applyHover(pick()); });
+canvas.addEventListener('pointerleave', () => applyHover(null));
+canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; downBtn = e.button; canvas.classList.add('dragging'); });
+window.addEventListener('pointerup', (e) => {
+  canvas.classList.remove('dragging');
+  const dx = e.clientX - downX, dy = e.clientY - downY;
+  const isClick = (dx * dx + dy * dy) < 36 && e.button === downBtn && e.button === 0;
+  if (isClick) {
+    if (hovered) {
+      handleClick(hovered);
+    } else {
+      // 点击空白处：飞向点击点放大；若已放大则恢复全景
+      setPointer(e);
+      raycaster.setFromCamera(pointer, camera);
+      const hit = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(groundPlane, hit)) {
+        if (camera.zoom > 1.5) {
+          // 生日蛋糕特写时点空白：完整退出（恢复灯光/音乐），避免暗场 + 生日歌卡死
+          if (birthdayStage === 2) exitBirthday();
+          else resetView();
+        }
+        else flyToGroundPoint(hit);
+      }
+    }
+  }
+});
+
+let camAnim = null;
+function flyToCamera(toPos, toTarget, duration = 1.1, onDone, toZoom = null) {
+  camAnim = { t: 0, duration, fromPos: camera.position.clone(), toPos: new THREE.Vector3(...toPos), fromTarget: controls.target.clone(), toTarget: new THREE.Vector3(...toTarget), fromZoom: camera.zoom, toZoom, onDone };
+  controls.enabled = false;
+}
+function easeInOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+function flyToBar(onDone) { const v = SCENE_CONFIG.barView; flyToCamera(v.position, v.target, 1.1, onDone); }
+function flyToCake() { const v = SCENE_CONFIG.cakeView; flyToCamera(v.position, v.target, 1.8, null, v.zoom); }
+
+function handleClick(it) {
+  switch (it.interactive) {
+    case 'coffee-bar': flyToBar(() => openMenu()); break;
+    case 'envelope': openLetter(); break;
+    case 'record-player': toggleRecordPlayer(); break;
+    case 'window': toggleWindow(); break;
+    case 'birthday-book': openBookView(); break;
+    case 'birthday-cake':
+      if (birthdayStage === 2) {
+        if (!candleBlown) blowCandles();
+        else showToast('点右下角「返回 Café · Musique」就能回去啦');
+      } else if (birthdayStage === 3) {
+        reenterCakeView();   // 已返回咖啡屋：点吧台上的蛋糕，重回生日特写
+      }
+      break;
+    case 'photo-frame': {
+      const ref = photoFrameRefs.find(r => r.cfg.id === it.meta.id);
+      if (ref) openLightbox(ref);
+      break;
+    }
+    case 'clickable': showBubble(`这是 ${it.meta.name} 哦~`); break;
+    default: break;
+  }
+}
+
+function projectToScreen(object3d) {
+  const p = new THREE.Vector3();
+  object3d.getWorldPosition(p);
+  p.y += SCENE_CONFIG.bubbleOffsetY;
+  p.project(camera);
+  const rect = renderer.domElement.getBoundingClientRect();
+  return { x: (p.x * 0.5 + 0.5) * rect.width, y: (-p.y * 0.5 + 0.5) * rect.height };
+}
+
+/* ============================================================================
+ * 11) 动画循环 + 自适应
+ * ==========================================================================*/
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  if (camAnim) {
+    camAnim.t += dt;
+    const k = Math.min(camAnim.t / camAnim.duration, 1);
+    const e = easeInOutCubic(k);
+    camera.position.lerpVectors(camAnim.fromPos, camAnim.toPos, e);
+    controls.target.lerpVectors(camAnim.fromTarget, camAnim.toTarget, e);
+    if (camAnim.toZoom != null) {
+      camera.zoom = camAnim.fromZoom + (camAnim.toZoom - camAnim.fromZoom) * e;
+      camera.updateProjectionMatrix();
+    }
+    if (k >= 1) {
+      const done = camAnim.onDone;
+      camAnim = null;
+      controls.enabled = true;
+      if (done) done();
+    }
+  }
+
+  // 木窗双扇开合动画（左扇负角、右扇正角，均向室内开）
+  if (windowSashes) {
+    const k = 1 - Math.exp(-dt * 6);
+    windowSashes.left.rotation.y += (-windowSashes.target * WINDOW_OPEN_ANGLE - windowSashes.left.rotation.y) * k;
+    windowSashes.right.rotation.y += (windowSashes.target * WINDOW_OPEN_ANGLE - windowSashes.right.rotation.y) * k;
+  }
+
+  if (birthdayGroup && birthdayGroup.scale.x < 1) {
+    const s = Math.min(birthdayGroup.scale.x + dt * 1.6, 1);
+    birthdayGroup.scale.setScalar(s);
+  }
+
+  if (cakeMesh && cakeMesh.scale.x < 1) {
+    const s = Math.min(cakeMesh.scale.x + dt * 1.6, 1);
+    cakeMesh.scale.setScalar(s);
+  }
+
+  for (const it of INTERACTIVES) {
+    const target = (hovered === it) ? it.baseScale.clone().multiplyScalar(it.hoverFactor) : it.baseScale;
+    it.wrapper.scale.lerp(target, 0.18);
+  }
+
+  if (bubbleEl.classList.contains('show')) {
+    const anchor = SCENE_OBJECTS.get(SCENE_CONFIG.bubbleAnchorId);
+    if (anchor && anchor.wrapper.children.length) {
+      const s = projectToScreen(anchor.wrapper);
+      bubbleEl.style.left = s.x + 'px'; bubbleEl.style.top = s.y + 'px';
+    }
+  }
+
+  // 防穿模：相机在墙外侧时隐藏该墙（动态剖面）
+  const cp = camera.position;
+  if (roomWalls.back) roomWalls.back.visible = cp.z > -13;
+  if (roomWalls.left) roomWalls.left.visible = cp.x > -16;
+  if (roomWalls.right) roomWalls.right.visible = cp.x < 16;
+
+  // 裁剪面：固定宽范围，确保整个房间所有模型始终可见（避免动态裁剪把边缘模型裁没）
+  camera.near = 0.1;
+  camera.far = 200;
+  camera.updateProjectionMatrix();
+
+  // 平移目标锁定在房间范围内
+  controls.target.x = THREE.MathUtils.clamp(controls.target.x, -13, 13);
+  controls.target.y = THREE.MathUtils.clamp(controls.target.y, 0.5, 4.5);
+  controls.target.z = THREE.MathUtils.clamp(controls.target.z, -11.5, 11.5);
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+function onResize() {
+  const w = app.clientWidth, h = app.clientHeight;
+  const aspect = w / h;
+  camera.left = -orthoSize * aspect; camera.right = orthoSize * aspect;
+  camera.top = orthoSize; camera.bottom = -orthoSize;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+createRoom();
+createRug();
+SCENE_CONFIG.models.forEach(loadModel);
+animate();
+
+// 调试：?debug=cake 跳过开场与信件流程，直接出蛋糕特写（仅开发预览用）
+if (new URLSearchParams(location.search).get('debug') === 'cake') {
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('start').classList.add('hidden');
+    document.getElementById('envelopePage').classList.add('hidden');
+    birthdayStage = 1;
+    showCake();
+  }, 1200);
+}
+</script>
+
+
+</body></html>
+
+
+
