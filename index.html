@@ -1877,7 +1877,9 @@ canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.cli
 window.addEventListener('pointerup', (e) => {
   canvas.classList.remove('dragging');
   const dx = e.clientX - downX, dy = e.clientY - downY;
-  const isClick = (dx * dx + dy * dy) < 36 && e.button === downBtn && e.button === 0;
+  // 手机触摸的 button 为 undefined/-1，用 pointerType 区分：鼠标要求左键，触摸/笔直接算点击
+  const isMouse = e.pointerType === 'mouse';
+  const isClick = (dx * dx + dy * dy) < 36 && (!isMouse || (e.button === downBtn && e.button === 0));
   if (isClick) {
     if (hovered) {
       handleClick(hovered);
